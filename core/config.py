@@ -33,6 +33,13 @@ DEFAULT_CONFIG = {
     "ocr": {
         "confidence_threshold": 0.55,
     },
+    "web": {
+        "cdp_port": 9222,                # 浏览器调试端口(网页版模式)
+        "url_keywords": ["chaoxing", "mooc"],  # 学习通页面 URL 特征
+        "wait_page_timeout": 180,        # 等待用户打开做题页的超时(秒)
+        "q_delay": [3.0, 8.0],           # 每题间隔随机秒数(防检测)
+        "opt_delay": [0.5, 1.5],         # 选项间点击随机秒数
+    },
     "log": {
         "save_to_file": True,
         "dir": "logs",

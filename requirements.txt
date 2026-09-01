@@ -20,6 +20,7 @@ opencv-python==5.0.0.93
 packaging==26.3
 pillow==12.3.0
 pluggy==1.6.0
+playwright==1.62.0
 protobuf==7.36.0
 PyAutoGUI==0.9.54
 pyclipper==1.4.0

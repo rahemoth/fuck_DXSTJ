@@ -11,7 +11,7 @@ from PySide6.QtCore import Qt, QThread, Signal, QObject
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QLabel, QPlainTextEdit, QGroupBox, QFormLayout, QMessageBox, QApplication,
-    QDialog, QTreeWidget, QTreeWidgetItem, QDialogButtonBox,
+    QDialog, QTreeWidget, QTreeWidgetItem, QDialogButtonBox, QComboBox,
 )
 
 from core.config import Config
@@ -26,12 +26,16 @@ class LogBridge(QObject):
 
 
 class Worker(QThread):
-    """承载 Executor 主循环的工作线程"""
+    """承载 Executor 主循环的工作线程(客户端 OCR 版 / 网页版)"""
     event = Signal(str, dict)  # kind, data
 
-    def __init__(self, cfg: dict):
+    def __init__(self, cfg: dict, web_mode: bool = False):
         super().__init__()
-        self.executor = Executor(cfg, emit=self._on_event)
+        if web_mode:
+            from core.web.driver import WebExecutor
+            self.executor = WebExecutor(cfg, emit=self._on_event)
+        else:
+            self.executor = Executor(cfg, emit=self._on_event)
 
     def _on_event(self, e: ExecutorEvent):
         self.event.emit(e.kind, e.data)
@@ -123,6 +127,13 @@ class MainWindow(QMainWindow):
 
         # 顶部控制栏
         top = QHBoxLayout()
+        self.mode_combo = QComboBox()
+        self.mode_combo.addItem("客户端(OCR)")
+        self.mode_combo.addItem("网页版(浏览器)")
+        self.mode_combo.setToolTip(
+            "客户端:OCR 识别学习通 PC 客户端\n"
+            "网页版:CDP 直连浏览器 DOM 读题(需浏览器开调试端口,自动拉起)")
+        top.addWidget(self.mode_combo)
         self.status_label = QLabel("● 未连接")
         self.status_label.setStyleSheet("color: gray; font-weight: bold;")
         top.addWidget(self.status_label)
@@ -246,14 +257,18 @@ class MainWindow(QMainWindow):
         if cfg["action"]["dry_run"]:
             self.logger.info("dry-run 模式已开启:不会实际点击")
 
-        # 重连窗口
-        from core.controller.window import WindowCapture
-        win = WindowCapture(cfg["window"]["title_keywords"], cfg["window"]["capture_method"])
-        if not win.find():
-            QMessageBox.warning(self, "未找到窗口", "未找到学习通窗口,请先打开学习通PC客户端")
-            return
+        web_mode = self.mode_combo.currentIndex() == 1
+        if not web_mode:
+            # 客户端模式:重连窗口
+            from core.controller.window import WindowCapture
+            win = WindowCapture(cfg["window"]["title_keywords"], cfg["window"]["capture_method"])
+            if not win.find():
+                QMessageBox.warning(self, "未找到窗口", "未找到学习通窗口,请先打开学习通PC客户端")
+                return
+        else:
+            self.logger.info("网页版模式:将连接调试端口的浏览器(未启动会自动拉起 Chrome/Edge)")
 
-        self.worker = Worker(cfg.data)
+        self.worker = Worker(cfg.data, web_mode=web_mode)
         self.worker.event.connect(self.on_worker_event)
         self.worker.finished.connect(self.on_worker_finished)
         self.worker.start()

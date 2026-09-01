@@ -31,6 +31,19 @@ ocr:
   confidence_threshold: 0.55
   retry_threshold: 0.3         # 页面识别不完整时降阈值重识别(单字符选项易漏检)
 
+web:                            # 网页版模式(GUI 顶部下拉切换)
+  cdp_port: 9222                # 浏览器调试端口;浏览器未启动时自动拉起 Chrome/Edge
+  url_keywords:                 # 学习通页面 URL 特征(用于定位做题标签页)
+  - chaoxing
+  - mooc
+  wait_page_timeout: 180        # 等待用户打开做题页的超时(秒)
+  q_delay:                      # 每题作答间隔随机秒数(防检测)
+  - 3.0
+  - 8.0
+  opt_delay:                    # 多选题选项间点击随机秒数
+  - 0.5
+  - 1.5
+
 log:
   save_to_file: true
   dir: logs
