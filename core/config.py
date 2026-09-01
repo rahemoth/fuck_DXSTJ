@@ -37,6 +37,8 @@ DEFAULT_CONFIG = {
         "default_browser": "",           # 默认浏览器: "" 未选择 / edge / chrome(程序拉起该浏览器的专用实例)
         "cdp_port": 9222,                # 专用浏览器调试端口(网页版模式)
         "ext_bridge_port": 9876,         # 插件模式本地桥 HTTP 端口
+        "launch_browser": True,          # 插件模式自动拉起带插件的专用浏览器;
+                                         # false=使用日常浏览器(需手动装一次插件,见日志指引)
         "url_keywords": ["chaoxing", "mooc"],  # 学习通页面 URL 特征
         "wait_page_timeout": 180,        # 等待用户打开做题页的超时(秒)
         "q_delay": [3.0, 8.0],           # 每题间隔随机秒数(防检测)

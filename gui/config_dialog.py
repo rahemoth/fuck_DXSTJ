@@ -106,6 +106,14 @@ class ConfigDialog(QDialog):
         self.cdp_port.setValue(int(cfg.get("web", {}).get("cdp_port", 9222)))
         form.addRow("调试端口", self.cdp_port)
 
+        self.launch_browser = QCheckBox("插件模式自动拉起专用浏览器")
+        self.launch_browser.setChecked(cfg.get("web", {}).get("launch_browser", True))
+        self.launch_browser.setToolTip(
+            "勾选:点开始时自动拉起带插件的程序专用浏览器实例;\n"
+            "取消:使用你日常的浏览器(需手动装一次插件,详见开始后日志指引:\n"
+            "扩展管理页开启开发人员模式 → 加载解压缩的扩展 → 选 webextension 目录)")
+        form.addRow("", self.launch_browser)
+
         layout.addLayout(form)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
@@ -232,5 +240,6 @@ class ConfigDialog(QDialog):
             "web": {
                 "default_browser": self.default_browser.currentData(),
                 "cdp_port": self.cdp_port.value(),
+                "launch_browser": self.launch_browser.isChecked(),
             },
         }

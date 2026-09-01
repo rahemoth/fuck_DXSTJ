@@ -57,9 +57,18 @@ class ExtensionExecutor:
             server = start_bridge_server(self.bridge, port)
             logger.info(f"插件桥服务已启动: http://127.0.0.1:{port}")
 
-            self._launch_browser()
+            if self.web_cfg.get("launch_browser", True):
+                self._launch_browser()
+                logger.info("插件已激活:请在浏览器中打开学习通做题页(已打开则自动开始)")
+            else:
+                logger.info(
+                    "launch_browser=false:不拉起专用浏览器,等待已手动安装插件的日常浏览器。\n"
+                    f"若日常浏览器尚未安装本插件(一次性操作):\n"
+                    f"  1. 打开浏览器扩展管理页(Edge: edge://extensions)\n"
+                    f"  2. 开启「开发人员模式」→ 点「加载解压缩的扩展」\n"
+                    f"  3. 选择目录: {EXTENSION_DIR}\n"
+                    f"之后打开学习通做题页,日志出现「[插件] 已注入页面」即自动开始")
             self.bridge.enabled.set()
-            logger.info("插件已激活:请在浏览器中打开学习通做题页(已打开则自动开始)")
 
             # 等待:用户停止 / 插件报告全部完成
             while not self._stop.is_set() and not self.bridge.is_done():
@@ -83,6 +92,8 @@ class ExtensionExecutor:
     def _launch_browser(self):
         """拉起带插件的专用浏览器(端口已开则复用现有实例)"""
         from core.web.driver import _launch_managed_browser
+        # 复用现有专用实例时无法追加 --load-extension,提示用户
+        # (插件已在实例首次启动时装载过,profile 会记住插件)
 
         cdp_port = self.web_cfg.get("cdp_port", 9222)
         _launch_managed_browser(

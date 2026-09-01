@@ -70,8 +70,10 @@
         labels.push(lb);
       }
 
+      // 已答状态:原生 checked 或我们点击成功后打标的 data-xxt-done
+      // (学习通部分版式无 input 元素,靠点击标记避免死循环)
       const answered = !!c.querySelector(
-        'input[type=radio]:checked, input[type=checkbox]:checked');
+        'input[type=radio]:checked, input[type=checkbox]:checked, [data-xxt-done]');
 
       const stemEl = c.querySelector('.Cy_txt, .qtstem, [class*="stem"], [class*="Stem"]');
       let stem = stemEl ? stemEl.innerText.trim() : '';
@@ -140,14 +142,34 @@
     const r = target.getBoundingClientRect();
     const x = r.left + r.width * (0.3 + Math.random() * 0.4);
     const y = r.top + r.height * (0.3 + Math.random() * 0.4);
+
+    const inp = target.querySelector('input[type=radio], input[type=checkbox]');
+    // 1) 原生点击 input 最可靠(直接置 checked)
+    if (inp && !inp.checked) {
+      inp.click();
+      if (inp.checked) {
+        target.setAttribute('data-xxt-done', '1');
+        return 'ok';
+      }
+    }
+    // 2) 派发鼠标事件序列(页面监听 click 的版式)
+    const clsBefore = target.className;
     for (const type of ['mousedown', 'mouseup', 'click']) {
       target.dispatchEvent(new MouseEvent(type, {
         bubbles: true, cancelable: true, view: window,
         clientX: x, clientY: y,
       }));
     }
-    const inp = target.querySelector('input[type=radio], input[type=checkbox]');
-    if (inp && !inp.checked) inp.click();
+    // 3) 验证:input checked 或行元素 class/style 变化
+    const verified = (inp && inp.checked) ||
+                     target.className !== clsBefore ||
+                     target.querySelector('[class*="check"], [class*="Check"], [class*="selected"], [class*="active"]');
+    if (!verified) {
+      // 无 input 且无可见状态变化:标记已处理防止死循环,但提示人工检查
+      target.setAttribute('data-xxt-done', '1');
+      return 'unverified';
+    }
+    target.setAttribute('data-xxt-done', '1');
     return 'ok';
   }
 
@@ -173,6 +195,7 @@
 
   async function run(cfg) {
     let idle = 0;
+    const attempts = {};   // 题目重试次数(防 LLM 死循环调用)
     while (!abort) {
       const items = extract();
       if (!items.length) {
@@ -183,6 +206,12 @@
       for (const it of items) {
         if (abort) return;
         if (it.answered) continue;
+        const key = it.idx + '|' + it.stem.slice(0, 24);
+        attempts[key] = (attempts[key] || 0) + 1;
+        if (attempts[key] > 3) {
+          await report('fail', { msg: `题目${it.idx + 1} 点击后未生效(已重试3次),请人工检查` });
+          continue;
+        }
         pending++;
         const opts = optsOf(it);
         await report('question', { qtype: it.qtype, stem: it.stem, options: opts });
@@ -197,7 +226,11 @@
         if (!cfg.dry_run) {
           for (const lb of r.answer) {
             const ret = clickOption(it.idx, lb);
-            if (ret !== 'ok') await report('log', { msg: `选项 ${lb} 点击失败: ${ret}` });
+            if (ret === 'unverified') {
+              await report('log', { msg: `题目${it.idx + 1} 选项 ${lb} 点击后未检出选中效果,请人工检查` });
+            } else if (ret !== 'ok') {
+              await report('log', { msg: `选项 ${lb} 点击失败: ${ret}` });
+            }
             await sleep(rnd(cfg.opt_delay[0], cfg.opt_delay[1]) * 1000);
           }
         }

@@ -35,6 +35,9 @@ web:                            # 网页版模式(GUI 顶部下拉切换)
   default_browser: ''           # 默认浏览器(edge/chrome),必选;程序将拉起该浏览器的专用实例
   cdp_port: 9222                # 专用浏览器调试端口(独立配置,不影响日常浏览器)
   ext_bridge_port: 9876         # 插件模式本地桥 HTTP 端口
+  launch_browser: true          # 插件模式自动拉起带插件的专用浏览器;
+                                # false=用日常浏览器(需手动装一次插件:扩展页开
+                                # 发者模式→加载解压缩的扩展→选 webextension 目录)
   url_keywords:                 # 学习通页面 URL 特征(用于定位做题标签页)
   - chaoxing
   - mooc
