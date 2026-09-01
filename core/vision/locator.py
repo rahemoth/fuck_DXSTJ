@@ -57,6 +57,8 @@ class Question:
     option_centers: dict[str, tuple[int, int]] = field(default_factory=dict)  # 选项点击坐标(客户区)
     complete: bool = True                        # 选项采集完整(未被视口裁剪/OCR漏检)
     incomplete_reason: str = ""                  # 完整性校验失败原因(日志诊断用)
+    anchor_y2: int = 0                           # 锚点块底部 y(选项区裁剪放大重识别用)
+    region_y2: int = 0                           # 该题区域底部 y(下一题锚点顶部或视口底)
 
     @property
     def key(self) -> str:
@@ -120,8 +122,11 @@ class QuestionLocator:
         questions = []
         for k, (idx, number, qtype_str, stem) in enumerate(anchors):
             end = anchors[k + 1][0] if k + 1 < len(anchors) else len(content)
-            questions.append(self._build(content, idx, end, number, qtype_str,
-                                         stem, page_height))
+            q = self._build(content, idx, end, number, qtype_str,
+                            stem, page_height)
+            q.anchor_y2 = content[idx].box[3]
+            q.region_y2 = content[end].box[1] if end < len(content) else (page_height or 99999)
+            questions.append(q)
         return questions
 
     def find_next_button(self, blocks: list[OcrBlock]) -> OcrBlock | None:

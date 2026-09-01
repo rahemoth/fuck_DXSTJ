@@ -13,6 +13,7 @@ import time
 from dataclasses import dataclass
 
 import numpy as np
+from PIL import Image
 
 from core.agent.llm import LLMClient
 from core.agent.solver import Solver
@@ -125,6 +126,14 @@ class Executor:
             questions = self.locator.locate_all(blocks, img.size[1])
             target, partial = self._pick_target(questions)
 
+        if target is None and partial is not None and not partial.options:
+            # 降阈值仍零选项:RapidOCR 检测阶段就漏掉单字符块(置信度无关),
+            # 裁剪该题选项区放大3倍重识别,小目标放大后可检出
+            zoomed = self._ocr_zoom_band(img, blocks, partial)
+            if zoomed is not None:
+                blocks, questions = zoomed
+                target, partial = self._pick_target(questions)
+
         next_btn = self.locator.find_next_button(blocks)
 
         if target is not None:
@@ -174,6 +183,40 @@ class Executor:
             if partial is None and q.stem:
                 partial = q
         return target, partial
+
+    def _ocr_zoom_band(self, img, blocks, partial: Question):
+        """裁剪题目选项区(anchor_y2 ~ region_y2)放大3倍重识别。
+        单字符选项(如"3"/"5"/字母圈)在整页OCR的检测阶段就漏检,
+        放大后可检出。识别块坐标映射回客户区后与整页块合并重新解析。
+        返回 (新blocks, 新questions) 或 None(不适用的情形)。"""
+        y1, y2 = partial.anchor_y2, partial.region_y2
+        y2 = min(y2, y1 + 420)                 # 选项区不会超过一屏
+        if y1 <= 0 or y2 - y1 < 40:
+            return None
+        rx1, _, rx2, _ = self.locator.region
+        x1, x2 = max(0, rx1), min(img.size[0], rx2)
+        scale = 3
+        band = img.crop((x1, y1, x2, y2))
+        band = band.resize((band.size[0] * scale, band.size[1] * scale),
+                           Image.LANCZOS)
+        band_blocks = self.ocr.run(band, threshold=self.cfg["ocr"].get("retry_threshold", 0.3))
+        if not band_blocks:
+            return None
+        from core.vision.ocr import OcrBlock
+        mapped = []
+        for b in band_blocks:
+            bx1, by1, bx2, by2 = b.box
+            mapped.append(OcrBlock(
+                text=b.text,
+                box=(x1 + bx1 // scale, y1 + by1 // scale,
+                     x1 + bx2 // scale, y1 + by2 // scale),
+                confidence=b.confidence))
+        logger.info(f"[诊断] 题目{partial.number} 选项区({y1}~{y2}px)放大重识别:"
+                    f"新增 {len(mapped)} 块 {[b.text for b in mapped]}")
+        # 用映射回的块替换该区域的旧块(旧块基本为空),其余区域保留
+        merged = [b for b in blocks if not (y1 <= (b.box[1] + b.box[3]) / 2 < y2)] + mapped
+        questions = self.locator.locate_all(merged, img.size[1])
+        return merged, questions
 
     # ---------- 内部 ----------
 
@@ -300,20 +343,17 @@ class Executor:
         return self._do_scroll(f"{reason},微滚多次无效改用大步", img)
 
     def _do_fine_scroll(self, reason: str, img_before) -> str:
-        """方向键↓小步微滚(约150px,仅露出下一两行选项);
-        若未生效(焦点丢失等)则升级为大步滚动"""
+        """方向键↓小步微滚(约150px,仅露出下一两行选项)。
+        不做移动检测:像素对比存在误判(实测页面已移动却判为未动),
+        误判后立即升级大步滚动会连跳数题;交由主循环重新截图判断,
+        若页面确实未动,同一题会再次触发微滚(有次数上限兜底)。"""
         if self._scroll_total >= _SCROLL_CAP:
             raise RuntimeError(f"滚动超过 {_SCROLL_CAP} 次仍未完成,请人工检查")
         logger.info(f"{reason},↓微滚露出选项")
         self.input.arrow_down(int(self.cfg["action"].get("fine_scroll_steps", 3)))
         self._scroll_total += 1
         time.sleep(self.cfg["action"].get("fine_scroll_wait", 0.6))
-
-        img_after = self.window.screenshot()
-        if self._page_moved(img_before, img_after):
-            return "scrolled"
-        logger.info("↓微滚未生效,升级为大步滚动")
-        return self._do_scroll(reason, img_before)
+        return "scrolled"
 
     def _do_scroll(self, reason: str, img_before=None) -> str:
         """向下大步滚动(方向键↓为主,PageDown 仅兜底)。
@@ -325,11 +365,13 @@ class Executor:
         logger.info(reason)
         steps = int(self.cfg["action"].get("nav_scroll_steps", 8))
 
-        # 方向键大步,失败重试一次(首次焦点点击可能未生效)
+        # 方向键大步,失败重试一次(重试前重新截图做基线:
+        # 首次可能实际已滚动而检测误判,沿用旧基线再滚一次会连跳数题)
         if self._nav_arrows(steps, img_before):
             self._empty_scrolls = 0
             return "scrolled"
         logger.info("↓大步未生效,重试一次")
+        img_before = self.window.screenshot()
         if self._nav_arrows(steps, img_before):
             self._empty_scrolls = 0
             return "scrolled"
