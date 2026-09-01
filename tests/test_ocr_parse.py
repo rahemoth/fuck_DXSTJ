@@ -331,3 +331,32 @@ def test_incomplete_reason_label_gap():
     q = questions[0]
     assert not q.complete
     assert "不连续" in q.incomplete_reason
+
+
+def test_zoom_merged_blocks_must_be_sorted():
+    """回归:放大重识别的块合并后必须按 y 重排(实测bug:
+    Q6 选项块(单个数字)乱序追加在列表末尾,被按索引划入 Q7 区域,
+    导致 Q6 仍空、Q7 带着错误选项去作答)。locate_all 按索引切分题目区域,
+    输入块必须 y 有序 —— 本测试固定该契约。"""
+    locator = QuestionLocator()
+    # 模拟排序后的合并输入:Q6(数字选项) + Q7(英文选项) 同屏
+    blocks = make_blocks([
+        ("6. (单选题) Python3中的标准数据类型共有()种。", 193, 400),
+        ("A", 207, 450), ("4", 242, 451),
+        ("B", 207, 500), ("5", 242, 501),
+        ("C", 207, 550), ("6", 242, 551),
+        ("D", 207, 600), ("7", 242, 601),
+        ("7. (单选题)下列属于不可变数据类型的是()。", 193, 660),
+        ("List", 242, 715), ("Set", 242, 765),
+    ])
+    questions = locator.locate_all(blocks, page_height=850)
+    assert len(questions) == 2
+    q6, q7 = questions
+    assert q6.options == {"A": "4", "B": "5", "C": "6", "D": "7"}
+    assert q7.options["A"] == "List"
+    # 乱序输入(mapped 追加在末尾)会破坏归属 —— 契约:调用方必须排序
+    unsorted_blocks = [blocks[0], blocks[9], blocks[10], blocks[11]] + blocks[1:9]
+    questions_bad = locator.locate_all(unsorted_blocks, page_height=850)
+    q6_bad = questions_bad[0]
+    # 演示乱序后果:Q6 区域为空(其选项块索引上属于 Q7 之后)
+    assert not q6_bad.options

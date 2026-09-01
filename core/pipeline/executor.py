@@ -213,8 +213,12 @@ class Executor:
                 confidence=b.confidence))
         logger.info(f"[诊断] 题目{partial.number} 选项区({y1}~{y2}px)放大重识别:"
                     f"新增 {len(mapped)} 块 {[b.text for b in mapped]}")
-        # 用映射回的块替换该区域的旧块(旧块基本为空),其余区域保留
+        # 用映射回的块替换该区域的旧块(旧块基本为空),其余区域保留。
+        # 必须按 y 重排:locate_all 按列表索引切分题目区域,依赖块有序;
+        # mapped 追加在末尾而 y 在页面中部,会把放大块划给最后一题
+        # (实测Q6选项块被划给Q7,Q6仍空、Q7带着错误选项去作答)
         merged = [b for b in blocks if not (y1 <= (b.box[1] + b.box[3]) / 2 < y2)] + mapped
+        merged.sort(key=lambda b: (b.box[1], b.box[0]))
         questions = self.locator.locate_all(merged, img.size[1])
         return merged, questions
 
