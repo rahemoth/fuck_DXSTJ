@@ -88,14 +88,40 @@ AGENTS = {
     "AMP": ["amp"],
 }
 
+# 语言工具链:cmd 为 PATH 探测命令,version 为版本参数
+# (which 命中即算存在,版本仅作展示,失败不影响检测)
+TOOLCHAINS = {
+    "Java (JDK)": {"cmds": ["java"], "version": "-version"},
+    "Java 编译器 javac": {"cmds": ["javac"], "version": "-version"},
+    "Maven": {"cmds": ["mvn"], "version": "-version"},
+    "Gradle": {"cmds": ["gradle"], "version": "--version"},
+    "C/C++ 编译器 gcc": {"cmds": ["gcc"], "version": "--version"},
+    "C/C++ 编译器 g++": {"cmds": ["g++"], "version": "--version"},
+    "MSVC (cl)": {"cmds": ["cl"], "version": None},       # cl 无独立版本参数
+    "Clang": {"cmds": ["clang"], "version": "--version"},
+    "MSYS2/MinGW make": {"cmds": ["mingw32-make", "make"], "version": "--version"},
+    "CMake": {"cmds": ["cmake"], "version": "--version"},
+    "Node.js": {"cmds": ["node"], "version": "--version"},
+    "npm": {"cmds": ["npm"], "version": "--version"},
+    "Rust (rustc)": {"cmds": ["rustc"], "version": "--version"},
+    "Cargo": {"cmds": ["cargo"], "version": "--version"},
+    "Go": {"cmds": ["go"], "version": "version"},
+    "PHP": {"cmds": ["php"], "version": "--version"},
+    "Ruby": {"cmds": ["ruby"], "version": "--version"},
+    "Lua": {"cmds": ["lua"], "version": "-v"},
+    "R (Rscript)": {"cmds": ["Rscript"], "version": "--version"},
+    "Git": {"cmds": ["git"], "version": "--version"},
+}
+
 
 @dataclass
 class AppInfo:
     name: str          # 展示名,如 "VS Code"
-    kind: str          # ide / agent / python
+    kind: str          # ide / agent / python / toolchain
     path: str          # 可执行文件或 CLI 完整路径
     source: str        # which / registry / path / python
     cli: str = ""      # 可调用的 CLI 命令(空表示无)
+    version: str = ""  # 版本号(仅工具链,尽力获取,失败留空)
 
 
 def _expand(p: str) -> str:
@@ -201,20 +227,56 @@ def detect_pythons() -> list[AppInfo]:
     return results
 
 
+def _get_version(exe: str, arg: str) -> str:
+    """运行 <exe> <arg> 提取版本行(工具链版本,尽力而为,失败留空)。
+    java -version / javac -version 输出到 stderr,需合并。"""
+    import subprocess
+    try:
+        p = subprocess.run([exe, arg], capture_output=True, text=True,
+                           timeout=10, shell=False,
+                           creationflags=0x08000000)  # CREATE_NO_WINDOW
+        out = (p.stderr or "") + (p.stdout or "")
+        for line in out.splitlines():
+            line = line.strip()
+            if line and "version" in line.lower():
+                return line[:60]
+        return (p.stdout or "").strip().splitlines()[0][:60] if (p.stdout or "").strip() else ""
+    except Exception:
+        return ""
+
+
+def detect_toolchains() -> list[AppInfo]:
+    """检测语言工具链(Java/C++/Node/Rust/Go 等,仅 PATH 探测)"""
+    results = []
+    for name, spec in TOOLCHAINS.items():
+        for cmd in spec["cmds"]:
+            which = shutil.which(cmd)
+            if which:
+                version = ""
+                if spec.get("version"):
+                    version = _get_version(which, spec["version"])
+                results.append(AppInfo(name, "toolchain", which, "which",
+                                       cmd, version))
+                break
+    return results
+
+
 def detect_all() -> dict:
     """检测全部环境,返回可序列化字典"""
     ides = detect_ides()
     agents = detect_agents()
     pythons = detect_pythons()
+    toolchains = detect_toolchains()
     # IDLE 可能同时出现在 IDE 与 Python 检测结果中,去重(保留 IDE 分类)
     ide_names = {i.name for i in ides}
     pythons = [p for p in pythons if p.name != "IDLE" or "IDLE" not in ide_names]
     logger.info(f"环境检测: IDE {len(ides)} 个 / Agent {len(agents)} 个 / "
-                f"Python {len(pythons)} 个")
+                f"Python {len(pythons)} 个 / 工具链 {len(toolchains)} 个")
     return {
         "ides": [asdict(i) for i in ides],
         "agents": [asdict(a) for a in agents],
         "pythons": [asdict(p) for p in pythons],
+        "toolchains": [asdict(t) for t in toolchains],
     }
 
 
@@ -229,5 +291,5 @@ if __name__ == "__main__":
         if not items:
             print("  (未检测到)")
         for it in items:
-            src = f"({it['source']})"
-            print(f"  {it['name']:<20} {src:<12} {it['path']}")
+            ver = f"  {it['version']}" if it.get("version") else ""
+            print(f"  {it['name']:<20} {it['path']}{ver}")

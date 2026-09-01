@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from core.env.detector import (
     AppInfo, _app_paths_lookup, _find_file, detect_all, detect_ides,
+    detect_toolchains, _get_version,
 )
 
 
@@ -33,12 +34,12 @@ def test_find_file_glob():
 def test_detect_all_shape():
     """detect_all 返回结构完整可序列化"""
     result = detect_all()
-    assert set(result) == {"ides", "agents", "pythons"}
+    assert set(result) == {"ides", "agents", "pythons", "toolchains"}
     for section in result.values():
         assert isinstance(section, list)
         for it in section:
-            assert set(it) == {"name", "kind", "path", "source", "cli"}
-            assert it["kind"] in ("ide", "agent", "python")
+            assert set(it) == {"name", "kind", "path", "source", "cli", "version"}
+            assert it["kind"] in ("ide", "agent", "python", "toolchain")
             assert it["source"] in ("which", "registry", "path", "python")
 
 
@@ -51,3 +52,12 @@ def test_appinfo_dataclass():
 def test_detect_ides_no_crash():
     """任何机器上运行都不应崩溃"""
     assert isinstance(detect_ides(), list)
+
+
+def test_detect_toolchains_no_crash():
+    assert isinstance(detect_toolchains(), list)
+
+
+def test_get_version_handles_bad_exe():
+    """版本探测对不存在的命令应返回空串而非崩溃"""
+    assert _get_version("definitely_not_exist_9999.exe", "--version") == ""

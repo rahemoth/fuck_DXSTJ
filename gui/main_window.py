@@ -11,6 +11,7 @@ from PySide6.QtCore import Qt, QThread, Signal, QObject
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QLabel, QPlainTextEdit, QGroupBox, QFormLayout, QMessageBox, QApplication,
+    QDialog, QTreeWidget, QTreeWidgetItem, QDialogButtonBox,
 )
 
 from core.config import Config
@@ -40,6 +41,61 @@ class Worker(QThread):
 
     def stop(self):
         self.executor.stop()
+
+
+class EnvDetectDialog(QDialog):
+    """环境检测结果展示:树形列表(IDE / Agent / Python / 工具链)"""
+
+    SECTION_TITLES = {
+        "ides": "IDE / 编辑器",
+        "agents": "AI 编程 Agent",
+        "pythons": "Python",
+        "toolchains": "语言工具链",
+    }
+
+    def __init__(self, result: dict, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("环境检测")
+        self.resize(760, 480)
+        layout = QVBoxLayout(self)
+
+        self.tree = QTreeWidget()
+        self.tree.setHeaderLabels(["名称", "版本 / 来源", "路径"])
+        self.tree.setColumnWidth(0, 200)
+        self.tree.setColumnWidth(1, 260)
+        for section, items in result.items():
+            title = self.SECTION_TITLES.get(section, section)
+            group = QTreeWidgetItem([f"{title} ({len(items)})"])
+            group.setFlags(Qt.ItemIsEnabled)  # 仅分组标题,不可选
+            if not items:
+                empty = QTreeWidgetItem(["(未检测到)"])
+                empty.setFlags(Qt.NoItemFlags)
+                group.addChild(empty)
+            for it in items:
+                ver = it.get("version") or f"来源: {it['source']}"
+                child = QTreeWidgetItem([it["name"], ver, it["path"]])
+                group.addChild(child)
+            group.setExpanded(True)
+            self.tree.addTopLevelItem(group)
+        layout.addWidget(self.tree)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Close)
+        buttons.rejected.connect(self.reject)
+        buttons.clicked.connect(self.accept)
+        layout.addWidget(buttons)
+
+
+class EnvDetectWorker(QThread):
+    """后台线程执行环境检测(含版本探测的 subprocess,不阻塞 GUI)"""
+    finished_signal = Signal(dict)
+
+    def run(self):
+        from core.env.detector import detect_all
+        try:
+            self.finished_signal.emit(detect_all())
+        except Exception as e:
+            self.logger_error = str(e)
+            self.finished_signal.emit({})
 
 
 class MainWindow(QMainWindow):
@@ -89,6 +145,10 @@ class MainWindow(QMainWindow):
         self.btn_config = QPushButton("设置")
         self.btn_config.clicked.connect(self.on_config)
         top.addWidget(self.btn_config)
+
+        self.btn_env = QPushButton("环境检测")
+        self.btn_env.clicked.connect(self.on_env_detect)
+        top.addWidget(self.btn_env)
         root.addLayout(top)
 
         # 中部:题目预览 + 统计
@@ -156,6 +216,26 @@ class MainWindow(QMainWindow):
             self.logger.info("配置已保存")
             if cfg["action"]["dry_run"]:
                 self.logger.info("当前为 dry-run 模式:只识别和请求答案,不会点击")
+
+    # ---------- 环境检测 ----------
+
+    def on_env_detect(self):
+        """后台线程检测本机 IDE/Agent/Python/工具链,结果弹窗展示"""
+        self.btn_env.setEnabled(False)
+        self.btn_env.setText("检测中...")
+        self.logger.info("开始检测本机开发环境...")
+        self._env_worker = EnvDetectWorker()
+        self._env_worker.finished_signal.connect(self._on_env_detected)
+        self._env_worker.start()
+
+    def _on_env_detected(self, result: dict):
+        self.btn_env.setEnabled(True)
+        self.btn_env.setText("环境检测")
+        if not result:
+            self.logger.error(f"环境检测失败: {getattr(self._env_worker, 'logger_error', '未知错误')}")
+            return
+        dlg = EnvDetectDialog(result, self)
+        dlg.exec()
 
     def on_start(self):
         cfg = Config.get()
