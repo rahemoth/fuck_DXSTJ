@@ -69,7 +69,7 @@
   // ---------- 策略1:容器选择器 ----------
 
   function extractByContainers() {
-    const SEL = '.TiMu, .question, [class*="TiMu"], [class*="timu"]';
+    const SEL = '.TiMu, .singleQuesId, .question, [class*="TiMu"], [class*="timu"], [class*="singleQuesId"]';
     const containers = [...document.querySelectorAll(SEL)]
       .filter(el => (el.innerText || '').trim().length > 10);
     return containers.map(c => {
@@ -101,7 +101,24 @@
     });
   }
 
-  // ---------- 策略2:按选项行聚类(不依赖容器类名) ----------
+  // ---------- 策略2:题号锚点切分(不依赖容器类名) ----------
+
+  // 题号锚点:文本形如 "1. (单选题)" / "12.(多选题)" / "26.(判断题)"
+  function findQuestionAnchors() {
+    const out = [];
+    const els = document.querySelectorAll(
+      'div, p, span, i, em, li, label, h1, h2, h3, h4, strong, b');
+    for (const el of els) {
+      if (el.children.length > 3) continue;   // 锚点是小元素,大容器会误命中
+      const t = (el.innerText || '').trim();
+      if (!t || t.length > 60) continue;
+      if (/^\d{1,3}\s*[.、．)]?\s*[（(]?\s*(单选题|多选题|判断题|填空题|简答题)/.test(t)) {
+        out.push(el);
+      }
+    }
+    // 父子同匹配时只保留最内层元素
+    return out.filter(el => !out.some(o => o !== el && el.contains(o)));
+  }
 
   function extractByInputs() {
     const inputs = [...document.querySelectorAll('input[type=radio], input[type=checkbox]')];
@@ -111,30 +128,53 @@
     rows.sort((a, b) =>
       (a.row.compareDocumentPosition(b.row) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
 
-    // 聚类:同 name(radio)/同父元素/垂直间距<40px → 同题
-    const groups = [];
-    let cur = null;
-    for (let i = 0; i < rows.length; i++) {
-      const r = rows[i];
-      let same = false;
-      if (cur && i > 0) {
-        const p = rows[i - 1];
-        if (r.inp.type === 'radio' && p.inp.type === 'radio' &&
-            r.inp.name && r.inp.name === p.inp.name) same = true;
-        else if (r.row.parentElement === p.row.parentElement) same = true;
-        else {
-          const gap = Math.abs(
-            r.row.getBoundingClientRect().top -
-            p.row.getBoundingClientRect().bottom);
-          if (gap < 40) same = true;
+    // 分组:题号锚点优先(精确),无锚点回退间距聚类
+    let groups = null;
+    const anchors = findQuestionAnchors();
+    if (anchors.length >= 2) {
+      groups = anchors.map(() => []);
+      for (const r of rows) {
+        let ai = -1;
+        for (let k = 0; k < anchors.length; k++) {
+          if (anchors[k].compareDocumentPosition(r.row) &
+              Node.DOCUMENT_POSITION_FOLLOWING) ai = k;
         }
+        if (ai >= 0) groups[ai].push(r);
       }
-      if (same && cur) cur.push(r);
-      else { cur = [r]; groups.push(cur); }
+      groups = groups.filter(g => g.length);
+      if (groups.length >= 2) {
+        diagnose(`题号锚点切分:识别到 ${groups.length} 题`);
+      } else {
+        groups = null;   // 锚点没对上选项行,回退聚类
+      }
     }
-    if (groups.length < 2) return null;   // 聚不出多题,视为无效
+    if (!groups) {
+      // 聚类兜底:同 name(radio)/同父元素/垂直间距<40px → 同题
+      groups = [];
+      let cur = null;
+      for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        let same = false;
+        if (cur && i > 0) {
+          const p = rows[i - 1];
+          if (r.inp.type === 'radio' && p.inp.type === 'radio' &&
+              r.inp.name && r.inp.name === p.inp.name) same = true;
+          else if (r.row.parentElement === p.row.parentElement) same = true;
+          else {
+            const gap = Math.abs(
+              r.row.getBoundingClientRect().top -
+              p.row.getBoundingClientRect().bottom);
+            if (gap < 40) same = true;
+          }
+        }
+        if (same && cur) cur.push(r);
+        else { cur = [r]; groups.push(cur); }
+      }
+      if (groups.length < 2) return null;
+      diagnose(`选项行聚类兜底:识别到 ${groups.length} 题`);
+    }
 
-    // 题干:Range 取上一组末行到本组首行之间的文本
+    // 题干:Range 取上一组末行到本组首行之间的文本(含题号锚点行)
     const items = [];
     for (let g = 0; g < groups.length; g++) {
       const grp = groups[g];
@@ -146,14 +186,15 @@
         range.setEndBefore(grp[0].row);
         stem = range.toString().replace(/\s+/g, ' ').trim();
       } catch (e) { /* 跨边界异常则空题干 */ }
+      // 题型从未去前缀的题干判断(含"单选题/多选题/判断题"字样),再去掉题号前缀
       const qtype = qtypeFromText(stem.slice(0, 60));
+      stem = stem.replace(/^\d{1,3}\s*[.、．)]?\s*[（(][^)）]*[)）]\s*/, '');
       const texts = grp.map(r => (r.row.innerText || '').trim());
       const labels = texts.map((t, i) => labelOf(t, qtype, i));
       const answered = grp.some(r => r.inp.checked) ||
         grp.some(r => r.row.hasAttribute('data-xxt-done'));
       items.push({
         qtype, answered,
-        // 去掉页头(第二章练习/题量等):只保留题干主体
         stem: stem.slice(-200),
         rows: grp.map(r => ({ row: r.row, text: texts[grp.indexOf(r)] })),
         labels,
