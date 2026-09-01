@@ -171,6 +171,37 @@ def _browser_process_running() -> bool:
     return any(name in out for name in ("msedge.exe", "chrome.exe"))
 
 
+def _find_browser_exe() -> str | None:
+    """探测本机 Chrome/Edge 可执行文件(注册表 App Paths + 常见安装路径)"""
+    import os
+    import winreg
+
+    candidates = []
+    # 注册表 App Paths
+    for name in ("chrome.exe", "msedge.exe"):
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                                rf"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\{name}") as k:
+                candidates.append(winreg.QueryValueEx(k, "")[0])
+        except OSError:
+            pass
+    # 常见安装路径
+    for env, sub in (
+        ("LOCALAPPDATA", rf"Google\Chrome\Application\chrome.exe"),
+        ("PROGRAMFILES", rf"Google\Chrome\Application\chrome.exe"),
+        ("PROGRAMFILES(X86)", rf"Google\Chrome\Application\chrome.exe"),
+        ("PROGRAMFILES(X86)", rf"Microsoft\Edge\Application\msedge.exe"),
+        ("PROGRAMFILES", rf"Microsoft\Edge\Application\msedge.exe"),
+    ):
+        base = os.environ.get(env)
+        if base:
+            candidates.append(os.path.join(base, sub))
+    for c in candidates:
+        if c and os.path.isfile(c):
+            return c
+    return None
+
+
 def _ensure_cdp_browser(pw, port: int, web_cfg: dict, stop_check=None):
     """确保调试端口可用并返回 CDP 浏览器对象。
 
@@ -340,34 +371,8 @@ class WebExecutor:
 
     @staticmethod
     def _find_browser_exe():
-        """探测本机 Chrome/Edge 可执行文件"""
-        import os
-        import winreg
-
-        candidates = []
-        # 注册表 App Paths
-        for name in ("chrome.exe", "msedge.exe"):
-            try:
-                with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                                    rf"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\{name}") as k:
-                    candidates.append(winreg.QueryValueEx(k, "")[0])
-            except OSError:
-                pass
-        # 常见安装路径
-        for env, sub in (
-            ("LOCALAPPDATA", rf"Google\Chrome\Application\chrome.exe"),
-            ("PROGRAMFILES", rf"Google\Chrome\Application\chrome.exe"),
-            ("PROGRAMFILES(X86)", rf"Google\Chrome\Application\chrome.exe"),
-            ("PROGRAMFILES(X86)", rf"Microsoft\Edge\Application\msedge.exe"),
-            ("PROGRAMFILES", rf"Microsoft\Edge\Application\msedge.exe"),
-        ):
-            base = os.environ.get(env)
-            if base:
-                candidates.append(os.path.join(base, sub))
-        for c in candidates:
-            if c and os.path.isfile(c):
-                return c
-        return None
+        """探测本机 Chrome/Edge 可执行文件(转发模块级实现)"""
+        return _find_browser_exe()
 
     # ---------- 主循环 ----------
 
