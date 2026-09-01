@@ -33,6 +33,8 @@ ocr:
 
 web:                            # 网页版模式(GUI 顶部下拉切换)
   cdp_port: 9222                # 浏览器调试端口;浏览器未启动时自动拉起 Chrome/Edge
+  restart_browser: false        # true=浏览器在运行但未开调试端口时,自动关闭并以调试端口重启
+                               # (Edge 重启后默认恢复标签页,学习通登录态保留)
   url_keywords:                 # 学习通页面 URL 特征(用于定位做题标签页)
   - chaoxing
   - mooc

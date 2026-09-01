@@ -152,6 +152,111 @@ class StopRequested(Exception):
     pass
 
 
+# ---------- 浏览器 CDP 连接管理(模块级,供执行器与测试连接共用) ----------
+
+def _port_open(port: int) -> bool:
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.settimeout(0.5)
+        return s.connect_ex(("127.0.0.1", port)) == 0
+
+
+def _browser_process_running() -> bool:
+    """是否有 Chrome/Edge 进程在运行(含后台常驻实例)"""
+    try:
+        out = subprocess.run(["tasklist", "/FO", "CSV"], capture_output=True,
+                             text=True, timeout=10).stdout
+    except Exception:
+        return False
+    return any(name in out for name in ("msedge.exe", "chrome.exe"))
+
+
+def _ensure_cdp_browser(pw, port: int, web_cfg: dict, stop_check=None):
+    """确保调试端口可用并返回 CDP 浏览器对象。
+
+    三种情况:
+    1. 端口已开 → 直接连
+    2. 端口未开但浏览器已在运行 → 正常启动的浏览器不带调试端口,
+       且新拉起的进程会因单实例机制转交后退出,端口永远起不来:
+       - restart_browser=true: 自动结束浏览器进程并以调试端口重启
+         (Edge 重启后默认恢复标签页,登录态保留)
+       - 否则报错并给出操作指引
+    3. 浏览器未运行 → 自动以调试端口拉起
+    """
+    url = f"http://127.0.0.1:{port}"
+    if _port_open(port):
+        return pw.chromium.connect_over_cdp(url)
+
+    if _browser_process_running():
+        if not web_cfg.get("restart_browser", False):
+            raise RuntimeError(
+                "浏览器已在运行,但未开启调试端口,无法连接。\n"
+                "两种解决办法(任选其一):\n"
+                "  1. 完全退出浏览器(注意托盘区后台实例也要退出),再点开始,\n"
+                "     程序会自动以调试端口重新拉起;\n"
+                "  2. 在 config.yaml 的 web 段设置 restart_browser: true,\n"
+                "     程序将自动关闭并以调试端口重启浏览器(标签页可恢复,登录态保留)。")
+        # 自动重启浏览器
+        logger.info("restart_browser=true:结束现有浏览器进程 ...")
+        for name in ("msedge.exe", "chrome.exe"):
+            subprocess.run(["taskkill", "/F", "/IM", name],
+                           capture_output=True, timeout=15)
+        for _ in range(10):
+            if not _browser_process_running():
+                break
+            time.sleep(1)
+        time.sleep(1)
+
+    logger.info(f"端口 {port} 无浏览器,自动以调试端口拉起 Chrome/Edge ...")
+    exe = _find_browser_exe()
+    if not exe:
+        raise RuntimeError(
+            f"未找到可用的 Chrome/Edge。请手动以调试端口启动浏览器:\n"
+            f"  chrome.exe --remote-debugging-port={port}")
+    subprocess.Popen([exe, f"--remote-debugging-port={port}"],
+                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    for _ in range(20):
+        time.sleep(1)
+        if stop_check:
+            stop_check()
+        if _port_open(port):
+            return pw.chromium.connect_over_cdp(url)
+    raise RuntimeError(
+        "浏览器启动后调试端口仍不可达。\n"
+        "常见原因:浏览器有残留的后台/托盘进程占用了单实例锁,\n"
+        "请在任务管理器中结束所有 msedge/chrome 进程后重试。")
+
+
+def test_connection(web_cfg: dict) -> tuple[bool, str]:
+    """GUI 测试连接用:检测调试端口与学习通页面。只读不改动(不杀/不拉浏览器)。
+    返回 (是否成功, 说明文本)。"""
+    from playwright.sync_api import sync_playwright
+
+    port = web_cfg.get("cdp_port", 9222)
+    keywords = web_cfg.get("url_keywords", ["chaoxing", "mooc"])
+
+    if not _port_open(port):
+        if _browser_process_running():
+            return False, (
+                f"浏览器在运行但调试端口 {port} 未开启(正常启动的浏览器不带端口)。\n"
+                f"请完全退出浏览器(含托盘后台)后由程序重新拉起,\n"
+                f"或设置 web.restart_browser: true 自动重启浏览器。")
+        return False, f"调试端口 {port} 无浏览器。点「开始」将自动拉起 Chrome/Edge。"
+
+    pw = sync_playwright().start()
+    try:
+        browser = pw.chromium.connect_over_cdp(f"http://127.0.0.1:{port}")
+        for ctx in browser.contexts:
+            for page in ctx.pages:
+                if any(k in (page.url or "") for k in keywords):
+                    return True, f"已连接调试端口,并找到学习通页面: {page.url[:70]}"
+        return True, "已连接调试端口,但未找到学习通页面(请先打开作业/考试页)"
+    except Exception as e:
+        return False, f"连接调试端口失败: {e}"
+    finally:
+        pw.stop()
+
+
 class WebExecutor:
     """网页版做题主循环(与桌面版 Executor 同构,GUI 可互换承载)"""
 
@@ -205,30 +310,9 @@ class WebExecutor:
         keywords = self.web_cfg.get("url_keywords", ["chaoxing", "mooc"])
 
         self._pw = sync_playwright().start()
-        try:
-            self._browser = self._pw.chromium.connect_over_cdp(f"http://127.0.0.1:{port}")
-            logger.info(f"已连接调试端口 {port}")
-        except Exception:
-            logger.info(f"端口 {port} 无浏览器,尝试自动拉起 Chrome/Edge ...")
-            exe = self._find_browser_exe()
-            if not exe:
-                raise RuntimeError(
-                    f"未找到可用的 Chrome/Edge。请手动以调试端口启动浏览器:\n"
-                    f"  chrome.exe --remote-debugging-port={port}\n"
-                    f"(需先完全退出浏览器,以保留登录状态)")
-            subprocess.Popen([exe, f"--remote-debugging-port={port}"],
-                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            # 等待调试端口就绪
-            for _ in range(20):
-                time.sleep(1)
-                self._check_stop()
-                try:
-                    self._browser = self._pw.chromium.connect_over_cdp(f"http://127.0.0.1:{port}")
-                    break
-                except Exception:
-                    continue
-            else:
-                raise RuntimeError("浏览器启动后调试端口仍不可达,请检查浏览器是否被已有实例占用")
+        self._browser = _ensure_cdp_browser(
+            self._pw, port, self.web_cfg, stop_check=self._check_stop)
+        logger.info(f"已连接调试端口 {port}")
 
         # 定位学习通页面:立即找,找不到轮询等待用户打开
         wait_sec = self.web_cfg.get("wait_page_timeout", 180)

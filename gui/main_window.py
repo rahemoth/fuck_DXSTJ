@@ -102,6 +102,22 @@ class EnvDetectWorker(QThread):
             self.finished_signal.emit({})
 
 
+class WebConnectWorker(QThread):
+    """后台线程执行网页版连接测试(CDP 检测,不阻塞 GUI)"""
+    result_signal = Signal(bool, str)
+
+    def __init__(self, web_cfg: dict):
+        super().__init__()
+        self.web_cfg = web_cfg
+
+    def run(self):
+        from core.web.driver import test_connection
+        try:
+            self.result_signal.emit(*test_connection(self.web_cfg))
+        except Exception as e:
+            self.result_signal.emit(False, f"网页版连接测试异常: {e}")
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -197,6 +213,9 @@ class MainWindow(QMainWindow):
     # ---------- 按钮事件 ----------
 
     def on_connect(self):
+        if self.mode_combo.currentIndex() == 1:
+            self.on_connect_web()
+            return
         from core.controller.window import WindowCapture
 
         cfg = Config.get()
@@ -227,6 +246,27 @@ class MainWindow(QMainWindow):
             self.logger.info("配置已保存")
             if cfg["action"]["dry_run"]:
                 self.logger.info("当前为 dry-run 模式:只识别和请求答案,不会点击")
+
+    def on_connect_web(self):
+        """网页版测试连接:后台线程检测 CDP 端口与学习通页面"""
+        self.btn_connect.setEnabled(False)
+        self.btn_connect.setText("测试中...")
+        self.logger.info("网页版:测试浏览器调试端口连接 ...")
+        self._web_worker = WebConnectWorker(Config.get()["web"])
+        self._web_worker.result_signal.connect(self._on_web_connect_result)
+        self._web_worker.start()
+
+    def _on_web_connect_result(self, ok: bool, msg: str):
+        self.btn_connect.setEnabled(True)
+        self.btn_connect.setText("测试连接")
+        if ok:
+            self.status_label.setText("● 已连接(网页版)")
+            self.status_label.setStyleSheet("color: green; font-weight: bold;")
+            self.logger.info(f"网页版连接测试通过: {msg}")
+        else:
+            self.status_label.setText("● 网页版未就绪")
+            self.status_label.setStyleSheet("color: orange; font-weight: bold;")
+            self.logger.warning(f"网页版连接测试失败: {msg}")
 
     # ---------- 环境检测 ----------
 
