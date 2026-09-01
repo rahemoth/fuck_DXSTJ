@@ -333,6 +333,77 @@ def test_incomplete_reason_label_gap():
     assert "不连续" in q.incomplete_reason
 
 
+def test_judge_letter_noise_filtered():
+    """判断题:相邻选择题的字母圈(B)混入区域,不应污染题干"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("31.(判断题) read()函数运行之后，文件指针指向文件末尾。", 193, 200),
+        ("对", 242, 260), ("错", 242, 310),
+        ("B", 208, 315),                       # 相邻题的字母圈噪声
+    ])
+    questions = locator.locate_all(blocks, page_height=750)
+    q = questions[0]
+    assert "B" not in q.stem
+    assert q.stem.endswith("文件末尾。")
+    assert set(q.options) == {"对", "错"}
+    assert q.is_answerable
+
+
+def test_judge_truncated_stem_incomplete():
+    """判断题:续行被 OCR 漏检,题干以"("结尾 → 不完整,不得作答。
+    (实测bug:残缺题干 key 与完整题干不同,去重失效导致同题重复作答,
+    LLM 对残题干给出不同答案,反选了已答对的选项)"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("31.(判断题) read(", 193, 200),        # 续行块漏检
+        ("对", 242, 260), ("错", 242, 310),
+    ])
+    questions = locator.locate_all(blocks, page_height=750)
+    q = questions[0]
+    assert not q.complete
+    assert q.incomplete_reason == "题干疑似被截断"
+    assert not q.is_answerable
+    # 完整题干(闭合括号在后)不受影响
+    blocks2 = make_blocks([
+        ("31.(判断题) read()", 193, 200),
+        (")函数运行之后，文件指针指向文件末尾。", 333, 201),
+        ("对", 242, 260), ("错", 242, 310),
+    ])
+    q2 = locator.locate_all(blocks2, page_height=750)[0]
+    assert q2.complete
+    assert q2.is_answerable
+
+
+def test_choice_truncated_stem_incomplete():
+    """选择题:题干以"("结尾同样视为截断"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("8.(单选题)字符串str='Picture'，则str[1:3]的结果是(", 193, 200),
+        ("'Pi'", 244, 260), ("'ic'", 244, 310),
+    ])
+    questions = locator.locate_all(blocks, page_height=750)
+    q = questions[0]
+    assert not q.complete
+    assert q.incomplete_reason == "题干疑似被截断"
+
+
+def test_single_char_options_partial_miss():
+    """单字符选项部分漏检(Q20实测:选项0/1/None/True只识别出C/D):
+    标签不连续应判不完整(触发放大重识别),而非误作答或永久跳过"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("20. (单选题) pandas的read_csv中header参数默认值为()。", 193, 200),
+        ("C", 207, 260), ("None", 242, 261),
+        ("D", 207, 310), ("True", 242, 311),
+    ])
+    questions = locator.locate_all(blocks, page_height=750)
+    q = questions[0]
+    assert list(q.options) == ["C", "D"]
+    assert not q.complete
+    assert "不连续" in q.incomplete_reason
+    assert not q.is_answerable
+
+
 def test_zoom_merged_blocks_must_be_sorted():
     """回归:放大重识别的块合并后必须按 y 重排(实测bug:
     Q6 选项块(单个数字)乱序追加在列表末尾,被按索引划入 Q7 区域,

@@ -289,6 +289,11 @@ class QuestionLocator:
             # dx 超出范围(右侧答题卡等)的行忽略
 
         q.stem = "".join(stem_parts).strip()
+        # 题干截断检查:以 "(" 结尾说明续行/闭合括号被 OCR 漏检(同判断题)
+        if q.stem.endswith(("(", "（")):
+            q.complete = False
+            q.incomplete_reason = "题干疑似被截断"
+            return
 
         # ---- 完整性校验 ----
         # 连续性以最终选项标签为准:OCR 常漏检个别字母圈小块(如 A),
@@ -340,6 +345,9 @@ class QuestionLocator:
 
         for b in rest:
             text = b.text.strip()
+            if len(text) == 1 and text.upper() in "ABCDEF":
+                # 相邻选择题的字母圈噪声(判断题无字母选项,实测B圈混入题干)
+                continue
             dx = b.box[0] - anchor.box[0]
             if 0 <= dx <= self.option_max_dx:
                 if text in true_kws and "对" not in q.options:
@@ -355,6 +363,13 @@ class QuestionLocator:
             stem_parts.append(text)
 
         q.stem = "".join(stem_parts).strip()
+        # 题干截断检查:以 "(" 结尾说明续行块被 OCR 漏检
+        # (实测锚点"31.(判断题) read("的续行漏检后,残缺题干 key 与完整题干不同,
+        #  去重失效导致同题重复作答且 LLM 对残题干给出不同答案,反选了已答选项)
+        if q.stem.endswith(("(", "（")):
+            q.complete = False
+            q.incomplete_reason = "题干疑似被截断"
+            return
         # 底部裁剪检查
         reason = self._check_complete([], None, last_opt_y2, None, page_height)
         q.complete = reason is None

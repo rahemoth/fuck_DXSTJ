@@ -126,9 +126,14 @@ class Executor:
             questions = self.locator.locate_all(blocks, img.size[1])
             target, partial = self._pick_target(questions)
 
-        if target is None and partial is not None and not partial.options:
-            # 降阈值仍零选项:RapidOCR 检测阶段就漏掉单字符块(置信度无关),
-            # 裁剪该题选项区放大3倍重识别,小目标放大后可检出
+        if target is None and partial is not None and (
+                not partial.options
+                or (partial.incomplete_reason
+                    and "贴近视口底部" not in partial.incomplete_reason)):
+            # 零选项或部分漏检(标签不连续/题干截断/间距过大):
+            # RapidOCR 检测阶段就漏掉单字符块(如选项"0"/"1",置信度无关),
+            # 裁剪该题区域放大3倍重识别,小目标放大后可检出。
+            # 仅"贴近视口底部"除外:选项在视口外,放大无用,应滚动。
             zoomed = self._ocr_zoom_band(img, blocks, partial)
             if zoomed is not None:
                 blocks, questions = zoomed
