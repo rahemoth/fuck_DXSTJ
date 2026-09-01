@@ -244,7 +244,9 @@ def _ensure_cdp_browser(pw, port: int, web_cfg: dict, stop_check=None):
         raise RuntimeError(
             f"未找到可用的 Chrome/Edge。请手动以调试端口启动浏览器:\n"
             f"  chrome.exe --remote-debugging-port={port}")
-    subprocess.Popen([exe, f"--remote-debugging-port={port}"],
+    # --restore-last-session: 强杀重启后自动恢复之前的标签页
+    # (Chrome 强杀后默认弹崩溃横幅不恢复;用户打开的学习通页会自动回来)
+    subprocess.Popen([exe, f"--remote-debugging-port={port}", "--restore-last-session"],
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     for _ in range(20):
         time.sleep(1)
