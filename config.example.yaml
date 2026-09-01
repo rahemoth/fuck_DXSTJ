@@ -1,0 +1,37 @@
+window:
+  title_keywords:
+  - 学习通            # 学习通PC客户端窗口标题关键词
+  capture_method: printwindow   # printwindow / bitblt
+
+llm:
+  base_url: https://api.deepseek.com/v1   # OpenAI 兼容 API 地址
+  api_key: sk-xxxx                       # 你的 API key
+  model: deepseek-chat
+  temperature: 0.1
+  timeout: 60
+  max_retries: 1
+
+action:
+  dry_run: true           # true=只模拟不真实点击(首次测试建议开启)
+  click_delay:
+  - 0.8
+  - 1.8
+  next_delay:
+  - 1.0
+  - 2.0
+  option_interval:
+  - 0.3
+  - 0.6
+  page_wait: 1.0              # 大步滚动后等待页面稳定(秒)
+  nav_scroll_steps: 8          # 大步滚动方向键↓按键数(约50px/次,步幅过大会跳题)
+  fine_scroll_wait: 0.6        # 方向键↓微滚后等待页面稳定(秒)
+  fine_scroll_steps: 3         # 方向键↓微滚每次按键数(仅露出下一两行选项)
+  verify_wait: 0.6             # 点击选项后等待选中高亮生效(秒),再截图验证
+
+ocr:
+  confidence_threshold: 0.55
+  retry_threshold: 0.3         # 页面识别不完整时降阈值重识别(单字符选项易漏检)
+
+log:
+  save_to_file: true
+  dir: logs

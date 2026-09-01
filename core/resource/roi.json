@@ -1,0 +1,16 @@
+{
+  "content_region": [100, 0, 1000, 99999],
+  "option_indent": 30,
+  "option_max_offset_x": 250,
+  "option_line_gap": 35,
+  "stem_option_gap": 110,
+  "bottom_margin": 60,
+  "option_labels": ["A", "B", "C", "D", "E", "F"],
+  "judge_options": {
+    "true": ["对", "正确", "√", "T"],
+    "false": ["错", "错误", "×", "F"]
+  },
+  "next_button": ["下一题", "下一页", "下题"],
+  "submit_button": ["提交"],
+  "ignore_blocks": ["学习通", "正确答案", "我的答案", "解析", "得分", "收藏", "答题卡", "全屏", "暂时保存"]
+}
