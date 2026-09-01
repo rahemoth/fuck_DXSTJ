@@ -74,16 +74,15 @@ class InputController:
         self._sleep(self.cfg.get("next_delay", [1.0, 2.0]))
 
     def arrow_down(self, times: int = 10):
-        """按方向键↓微滚(精准露出被视口底部裁剪的选项)。
-        PageDown 一次跨约2题,会把选项不完整的题直接跳过;
-        方向键每次仅滚几十像素,适合补滚。需先点击内容区空白处建立焦点。"""
+        """按方向键↓滚动(导航与微滚统一入口)。
+        每次仅滚几十像素,小步多滚不跳题;需先点击内容区空白处建立焦点。"""
         if self.dry_run:
             logger.info(f"[dry-run] 跳过 ↓×{times}")
             return
         self.window.bring_to_front()
         time.sleep(0.1)
         l, t, r, b = self.window.client_rect_screen()
-        # 内容区左边距空白列(同 page_down,不会误触选项)
+        # 内容区左边距空白列(左侧导航 x<100, 题目内容 x>160, 120 为安全空白)
         sx, sy = self.window.client_to_screen(120, (b - t) // 2)
         pyautogui.click(sx, sy)
         time.sleep(0.15)
@@ -91,25 +90,6 @@ class InputController:
             pyautogui.press("down")
             time.sleep(0.04)
         logger.info(f"已按 ↓×{times}")
-
-    def page_down(self, focus: bool = True):
-        """按 PageDown 翻页(长滚动页导航主力)。
-        实测学习通 CEF 对注入滚轮每格仅滚约2.7px、PostMessage 完全无效,
-        键盘 PageDown 一次滚约2题且相邻页有重叠,是唯一可靠的大步导航。
-        需先点击内容区空白处建立焦点(点左边距空白列,不会误触选项)。"""
-        if self.dry_run:
-            logger.info("[dry-run] 跳过 PageDown")
-            return
-        self.window.bring_to_front()
-        time.sleep(0.15)
-        if focus:
-            l, t, r, b = self.window.client_rect_screen()
-            # 内容区左边距空白列(左侧导航 x<100, 题目内容 x>160, 120 为安全空白)
-            sx, sy = self.window.client_to_screen(120, (b - t) // 2)
-            pyautogui.click(sx, sy)
-            time.sleep(0.2)
-        pyautogui.press("pagedown")
-        logger.info("已按 PageDown")
 
     def press_home(self):
         """回到页面顶部(复查漏答题用)。

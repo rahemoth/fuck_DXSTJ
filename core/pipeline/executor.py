@@ -360,13 +360,13 @@ class Executor:
         return "scrolled"
 
     def _do_scroll(self, reason: str, img_before=None) -> str:
-        """向下滚动(方向键↓小步,约150px,与微滚同一步幅)。
+        """向下滚动(方向键↓小步,与微滚同一步幅)。
         不用大步:步幅超过约190px时 _page_moved 的条带对齐搜索范围
         (受最高条带 y0≈0.25h 限制)检测不到,必然误判"未生效",
         触发重试+兜底连滚上千px,一次性跳过多题(实测Q8-10被跳过);
         小步虽需多滚几次,但相邻视图重叠大、移动检测可靠,不跳题。
-        方向键未生效(焦点丢失)时重试一次,仍无效用 PageDown 兜底。
-        连续多次滚动页面纹丝不动 = 已到页面底部。"""
+        方向键未生效(焦点丢失)时重试一次;连续多次滚动页面纹丝不动
+        (包括重试) = 已到页面底部。"""
         if self._scroll_total >= _SCROLL_CAP:
             raise RuntimeError(f"滚动超过 {_SCROLL_CAP} 次仍未完成,请人工检查")
         logger.info(reason)
@@ -382,19 +382,10 @@ class Executor:
             self._empty_scrolls = 0
             return "scrolled"
 
-        # 方向键两次都未生效:PageDown 兜底
-        logger.info("方向键未生效,PageDown 兜底")
-        self.input.page_down()
-        self._scroll_total += 1
-        time.sleep(self.cfg["action"].get("page_wait", 1.0))
-        if img_before is not None:
-            img_after = self.window.screenshot()
-            if self._page_moved(img_before, img_after):
-                self._empty_scrolls = 0
-                return "scrolled"
-            self._empty_scrolls += 1
-            if self._empty_scrolls >= _EMPTY_SCROLL_LIMIT:
-                return self._on_bottom()
+        # 两次都未移动:计入连续空滚动(到底判定)
+        self._empty_scrolls += 1
+        if self._empty_scrolls >= _EMPTY_SCROLL_LIMIT:
+            return self._on_bottom()
         return "scrolled"
 
     def _nav_arrows(self, steps: int, img_before) -> bool:
