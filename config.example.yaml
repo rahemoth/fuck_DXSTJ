@@ -22,10 +22,9 @@ action:
   option_interval:
   - 0.3
   - 0.6
-  page_wait: 1.0              # 大步滚动后等待页面稳定(秒)
-  nav_scroll_steps: 8          # 大步滚动方向键↓按键数(约50px/次,步幅过大会跳题)
+  page_wait: 1.0              # 导航滚动后等待页面稳定(秒)
   fine_scroll_wait: 0.6        # 方向键↓微滚后等待页面稳定(秒)
-  fine_scroll_steps: 3         # 方向键↓微滚每次按键数(仅露出下一两行选项)
+  fine_scroll_steps: 3         # 方向键↓每次按键数(约50px/次;步幅超过约190px移动检测会失效)
   verify_wait: 0.6             # 点击选项后等待选中高亮生效(秒),再截图验证
 
 ocr:

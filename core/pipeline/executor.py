@@ -339,12 +339,12 @@ class Executor:
     def _scroll_partial(self, partial: Question, reason: str, img) -> str:
         """选项不完整时的滚动策略:
         优先方向键↓小步微滚(精准露出被裁剪的选项),
-        每题最多 _FINE_TRIES 次;仍不完整则大步滚动跳过,留待回顶复查再试"""
+        每题最多 _FINE_TRIES 次;仍不完整则导航滚动跳过,留待回顶复查再试"""
         tries = self._partial_tries.get(partial.key, 0)
         if tries < _FINE_TRIES:
             self._partial_tries[partial.key] = tries + 1
             return self._do_fine_scroll(reason, img)
-        return self._do_scroll(f"{reason},微滚多次无效改用大步", img)
+        return self._do_scroll(f"{reason},微滚多次无效改用导航滚动", img)
 
     def _do_fine_scroll(self, reason: str, img_before) -> str:
         """方向键↓小步微滚(约150px,仅露出下一两行选项)。
@@ -360,21 +360,23 @@ class Executor:
         return "scrolled"
 
     def _do_scroll(self, reason: str, img_before=None) -> str:
-        """向下大步滚动(方向键↓为主,PageDown 仅兜底)。
-        PageDown 一次跨约2题容错低(实测易把选项不完整的题整题跳过);
-        方向键累计步幅可控且相邻视图有重叠。方向键连续未生效(焦点丢失)
-        时才用 PageDown 兜底。连续多次滚动页面纹丝不动 = 已到页面底部。"""
+        """向下滚动(方向键↓小步,约150px,与微滚同一步幅)。
+        不用大步:步幅超过约190px时 _page_moved 的条带对齐搜索范围
+        (受最高条带 y0≈0.25h 限制)检测不到,必然误判"未生效",
+        触发重试+兜底连滚上千px,一次性跳过多题(实测Q8-10被跳过);
+        小步虽需多滚几次,但相邻视图重叠大、移动检测可靠,不跳题。
+        方向键未生效(焦点丢失)时重试一次,仍无效用 PageDown 兜底。
+        连续多次滚动页面纹丝不动 = 已到页面底部。"""
         if self._scroll_total >= _SCROLL_CAP:
             raise RuntimeError(f"滚动超过 {_SCROLL_CAP} 次仍未完成,请人工检查")
         logger.info(reason)
-        steps = int(self.cfg["action"].get("nav_scroll_steps", 8))
+        steps = int(self.cfg["action"].get("fine_scroll_steps", 3))
 
-        # 方向键大步,失败重试一次(重试前重新截图做基线:
-        # 首次可能实际已滚动而检测误判,沿用旧基线再滚一次会连跳数题)
+        # 重试前重新截图做基线(首次可能实际已滚动而检测误判)
         if self._nav_arrows(steps, img_before):
             self._empty_scrolls = 0
             return "scrolled"
-        logger.info("↓大步未生效,重试一次")
+        logger.info("↓未生效,重试一次")
         img_before = self.window.screenshot()
         if self._nav_arrows(steps, img_before):
             self._empty_scrolls = 0
@@ -396,7 +398,7 @@ class Executor:
         return "scrolled"
 
     def _nav_arrows(self, steps: int, img_before) -> bool:
-        """方向键↓大步滚动并检测页面是否移动"""
+        """方向键↓滚动并检测页面是否移动"""
         self.input.arrow_down(steps)
         self._scroll_total += 1
         time.sleep(self.cfg["action"].get("page_wait", 1.0))
