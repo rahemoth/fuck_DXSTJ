@@ -4,12 +4,22 @@
  * - 每 2 秒轮询本地桥 http://127.0.0.1:9876/config,主程序点「开始」后 enabled=true
  * - 扫描本 frame 的题目(插件以 all_frames 注入,天然覆盖做题页 iframe)
  * - 逐题 POST /solve 获取答案并点击;全部答完滚动找新题,滚不动则报告完成
+ *
+ * 题目抽取双策略:
+ * 1) 容器选择器(.TiMu 等)命中 N 个容器 → 每容器一题(标准版式)
+ * 2) 命中 ≤1 个但页面 radio/checkbox ≥4 → 按选项行聚类兜底(不依赖类名):
+ *    同 name 的 radio 必属同题;同行父元素/垂直间距近的选项行聚为一题;
+ *    题干用 Range 取上一题末行到本题首行之间的文本
  */
 (() => {
   'use strict';
   const API = 'http://127.0.0.1:9876';
   let abort = false;
   let working = false;
+  let diagnosed = false;
+
+  // 抽取缓存:clickOption 直接引用行元素,避免二次推导错位
+  const cache = { items: [] };
 
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const rnd = (a, b) => a + Math.random() * (b - a);
@@ -27,53 +37,50 @@
     return api('/report', { event, data }).catch(() => {});
   }
 
-  // ---------- 题目抽取(与主程序 CDP 方案的 EXTRACT_JS 同构) ----------
+  function diagnose(msg) {
+    if (diagnosed) return;
+    diagnosed = true;
+    report('log', { msg });
+  }
 
-  function extract() {
+  // ---------- 选项行工具 ----------
+
+  function rowOf(inp) {
+    return inp.closest('label, li, div, p') || inp.parentElement;
+  }
+
+  function labelOf(text, qtype, i) {
+    const m = text.match(/^([A-H])[.、．,，:：\s]/);
+    if (m) return m[1];
+    if (qtype === 'judge') {
+      if (/[对正确√]/.test(text)) return '对';
+      if (/[错误×]/.test(text)) return '错';
+      return null;
+    }
+    return String.fromCharCode(65 + i);
+  }
+
+  function qtypeFromText(t) {
+    if (t.includes('判断')) return 'judge';
+    if (t.includes('多选')) return 'multiple';
+    return 'single';
+  }
+
+  // ---------- 策略1:容器选择器 ----------
+
+  function extractByContainers() {
     const SEL = '.TiMu, .question, [class*="TiMu"], [class*="timu"]';
     const containers = [...document.querySelectorAll(SEL)]
       .filter(el => (el.innerText || '').trim().length > 10);
-    return containers.map((c, idx) => {
+    return containers.map(c => {
       const full = c.innerText || '';
-
       const typeEl = c.querySelector('.colorShallow, [class*="type"], [class*="Type"]');
-      let qtype = 'single';
-      const t = ((typeEl ? typeEl.innerText : '') + full.slice(0, 60));
-      if (t.includes('判断')) qtype = 'judge';
-      else if (t.includes('多选')) qtype = 'multiple';
+      const qtype = qtypeFromText(
+        ((typeEl ? typeEl.innerText : '') + full.slice(0, 60)));
 
-      const texts = [], els = [];
-      const inputs = c.querySelectorAll('input[type=radio], input[type=checkbox]');
-      if (inputs.length) {
-        for (const inp of inputs) {
-          const row = inp.closest('label, li, div, p') || inp.parentElement;
-          if (!row) continue;
-          els.push(row); texts.push((row.innerText || '').trim());
-        }
-      } else {
-        const rows = [...c.querySelectorAll('li, label, div, p')]
-          .filter(el => el.children.length <= 2 &&
-            /^[A-H][.、．,，:：\s]/.test((el.innerText || '').trim()));
-        for (const row of rows) { els.push(row); texts.push((row.innerText || '').trim()); }
-      }
-
-      const labels = [];
-      for (let i = 0; i < texts.length; i++) {
-        const m = texts[i].match(/^([A-H])[.、．,，:：\s]/);
-        let lb;
-        if (m) lb = m[1];
-        else if (qtype === 'judge') {
-          if (/[对正确√]/.test(texts[i])) lb = '对';
-          else if (/[错误×]/.test(texts[i])) lb = '错';
-          else lb = null;
-        } else lb = String.fromCharCode(65 + i);
-        labels.push(lb);
-      }
-
-      // 已答状态:原生 checked 或我们点击成功后打标的 data-xxt-done
-      // (学习通部分版式无 input 元素,靠点击标记避免死循环)
-      const answered = !!c.querySelector(
-        'input[type=radio]:checked, input[type=checkbox]:checked, [data-xxt-done]');
+      const rows = [...c.querySelectorAll('input[type=radio], input[type=checkbox]')]
+        .map(inp => ({ row: rowOf(inp), text: (rowOf(inp).innerText || '').trim() }));
+      let labels = rows.map((r, i) => labelOf(r.text, qtype, i));
 
       const stemEl = c.querySelector('.Cy_txt, .qtstem, [class*="stem"], [class*="Stem"]');
       let stem = stemEl ? stemEl.innerText.trim() : '';
@@ -81,59 +88,127 @@
         stem = full.split('\n').filter(line => {
           const s = line.trim();
           if (!s) return false;
-          return !texts.some(t => t.startsWith(s.slice(0, 8))) &&
+          return !rows.some(r => r.text.startsWith(s.slice(0, 8))) &&
                  !/^[A-H][.、．,，:：\s]/.test(s);
         }).join(' ').slice(0, 300);
       }
+      const answered = !!c.querySelector(
+        'input[type=radio]:checked, input[type=checkbox]:checked, [data-xxt-done]');
       return {
-        idx, qtype,
-        stem: stem.replace(/\s+/g, ' ').trim(),
-        labels, texts, answered,
+        qtype, answered, stem: stem.replace(/\s+/g, ' ').trim(),
+        rows, labels,
       };
     });
   }
 
+  // ---------- 策略2:按选项行聚类(不依赖容器类名) ----------
+
+  function extractByInputs() {
+    const inputs = [...document.querySelectorAll('input[type=radio], input[type=checkbox]')];
+    if (inputs.length < 4) return null;
+    const rows = inputs.map(inp => ({ inp, row: rowOf(inp) }));
+    // 文档顺序
+    rows.sort((a, b) =>
+      (a.row.compareDocumentPosition(b.row) & Node.DOCUMENT_POSITION_FOLLOWING) ? -1 : 1);
+
+    // 聚类:同 name(radio)/同父元素/垂直间距<40px → 同题
+    const groups = [];
+    let cur = null;
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i];
+      let same = false;
+      if (cur && i > 0) {
+        const p = rows[i - 1];
+        if (r.inp.type === 'radio' && p.inp.type === 'radio' &&
+            r.inp.name && r.inp.name === p.inp.name) same = true;
+        else if (r.row.parentElement === p.row.parentElement) same = true;
+        else {
+          const gap = Math.abs(
+            r.row.getBoundingClientRect().top -
+            p.row.getBoundingClientRect().bottom);
+          if (gap < 40) same = true;
+        }
+      }
+      if (same && cur) cur.push(r);
+      else { cur = [r]; groups.push(cur); }
+    }
+    if (groups.length < 2) return null;   // 聚不出多题,视为无效
+
+    // 题干:Range 取上一组末行到本组首行之间的文本
+    const items = [];
+    for (let g = 0; g < groups.length; g++) {
+      const grp = groups[g];
+      let stem = '';
+      try {
+        const range = document.createRange();
+        if (g === 0) range.setStart(document.body, 0);
+        else range.setStartAfter(groups[g - 1][groups[g - 1].length - 1].row);
+        range.setEndBefore(grp[0].row);
+        stem = range.toString().replace(/\s+/g, ' ').trim();
+      } catch (e) { /* 跨边界异常则空题干 */ }
+      const qtype = qtypeFromText(stem.slice(0, 60));
+      const texts = grp.map(r => (r.row.innerText || '').trim());
+      const labels = texts.map((t, i) => labelOf(t, qtype, i));
+      const answered = grp.some(r => r.inp.checked) ||
+        grp.some(r => r.row.hasAttribute('data-xxt-done'));
+      items.push({
+        qtype, answered,
+        // 去掉页头(第二章练习/题量等):只保留题干主体
+        stem: stem.slice(-200),
+        rows: grp.map(r => ({ row: r.row, text: texts[grp.indexOf(r)] })),
+        labels,
+      });
+    }
+    return items;
+  }
+
+  function extract() {
+    let items = extractByContainers();
+    const nCont = items.length;
+    if (nCont <= 1) {
+      const fb = extractByInputs();
+      if (fb && fb.length > nCont) {
+        diagnose(`容器选择器仅命中 ${nCont} 个,启用选项行聚类兜底:识别到 ${fb.length} 题`);
+        items = fb;
+      } else {
+        diagnose(`容器选择器命中 ${nCont} 个且兜底未生效,可能页面仍在加载`);
+      }
+    }
+    cache.items = items;
+    return items.map((it, idx) => ({
+      idx, qtype: it.qtype, stem: it.stem,
+      labels: it.labels, texts: it.rows.map(r => r.text),
+      answered: it.answered,
+    }));
+  }
+
   function optsOf(it) {
     const opts = {};
-    for (let i = 0; i < it.labels.length; i++) {
-      if (it.labels[i] && !(it.labels[i] in opts)) opts[it.labels[i]] = it.texts[i];
+    const item = cache.items[it.idx];
+    if (!item) return opts;
+    for (let i = 0; i < item.labels.length; i++) {
+      if (item.labels[i] && !(item.labels[i] in opts)) {
+        opts[item.labels[i]] = item.rows[i].text;
+      }
     }
     return opts;
   }
 
-  // ---------- 点击选项(与 CLICK_JS 同构) ----------
+  // ---------- 点击选项(直接使用抽取缓存的行元素) ----------
 
   function clickOption(qi, label) {
-    const SEL = '.TiMu, .question, [class*="TiMu"], [class*="timu"]';
-    const containers = [...document.querySelectorAll(SEL)]
-      .filter(el => (el.innerText || '').trim().length > 10);
-    const c = containers[qi];
-    if (!c) return 'no-container';
-
-    const texts = [], els = [];
-    const inputs = c.querySelectorAll('input[type=radio], input[type=checkbox]');
-    if (inputs.length) {
-      for (const inp of inputs) {
-        const row = inp.closest('label, li, div, p') || inp.parentElement;
-        if (!row) continue;
-        els.push(row); texts.push((row.innerText || '').trim());
-      }
-    } else {
-      const rows = [...c.querySelectorAll('li, label, div, p')]
-        .filter(el => el.children.length <= 2 &&
-          /^[A-H][.、．,，:：\s]/.test((el.innerText || '').trim()));
-      for (const row of rows) { els.push(row); texts.push((row.innerText || '').trim()); }
-    }
+    const item = cache.items[qi];
+    if (!item) return 'no-item';
 
     let target = null;
-    for (let i = 0; i < texts.length; i++) {
-      const m = texts[i].match(/^([A-H])[.、．,，:：\s]/);
-      if (m && m[1] === label) { target = els[i]; break; }
+    for (let i = 0; i < item.labels.length; i++) {
+      if (item.labels[i] === label) { target = item.rows[i].row; break; }
     }
     if (!target) {
-      for (let i = 0; i < texts.length; i++) {
-        if (label === '对' && /[对正确√]/.test(texts[i])) { target = els[i]; break; }
-        if (label === '错' && /[错误×]/.test(texts[i])) { target = els[i]; break; }
+      for (let i = 0; i < item.rows.length; i++) {
+        const t = item.rows[i].text;
+        if (label === '对' && /[对正确√]/.test(t)) { target = item.rows[i].row; break; }
+        if (label === '错' && /[错误×]/.test(t)) { target = item.rows[i].row; break; }
       }
     }
     if (!target) return 'no-option';
@@ -160,7 +235,7 @@
         clientX: x, clientY: y,
       }));
     }
-    // 3) 验证:input checked 或行元素 class/style 变化
+    // 3) 验证:input checked 或行元素可见状态变化
     const verified = (inp && inp.checked) ||
                      target.className !== clsBefore ||
                      target.querySelector('[class*="check"], [class*="Check"], [class*="selected"], [class*="active"]');
@@ -173,20 +248,27 @@
     return 'ok';
   }
 
-  // ---------- 滚动找新题 ----------
+  // ---------- 滚动找新题(步进,不狂飙) ----------
 
   function scrollPage() {
-    let moved = false;
-    const before = window.scrollY || document.documentElement.scrollTop || 0;
-    window.scrollBy(0, Math.floor(window.innerHeight * 0.8));
-    const after = window.scrollY || document.documentElement.scrollTop || 0;
-    if (after !== before) moved = true;
+    // 找最大的可滚动容器,每次滚动约 0.8 屏(之前一次拉到底,视觉上狂滑且跳题)
+    let best = null;
     for (const el of document.querySelectorAll('div')) {
       if (el.scrollHeight > el.clientHeight + 100 && el.clientHeight > 200) {
-        const b = el.scrollTop;
-        el.scrollTop = el.scrollHeight;
-        if (el.scrollTop !== b) moved = true;
+        if (!best || (el.scrollHeight - el.clientHeight) > (best.scrollHeight - best.clientHeight)) {
+          best = el;
+        }
       }
+    }
+    let moved = false;
+    const step = Math.floor(window.innerHeight * 0.8);
+    if (window.scrollY + window.innerHeight < document.documentElement.scrollHeight - 50) {
+      window.scrollBy(0, step);
+      moved = true;
+    }
+    if (best && best.scrollTop + best.clientHeight < best.scrollHeight - 50) {
+      best.scrollTop += step;
+      moved = true;
     }
     return moved;
   }
