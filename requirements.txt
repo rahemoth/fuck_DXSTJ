@@ -1,4 +1,6 @@
 # 精确锁定版本(由 pip freeze 生成,Python 3.11.9 验证通过)
+# 支持范围: Python 3.11 / 3.12(全部二进制包 cp312 wheel 已验证齐备)
+# Python 3.13+ 暂不支持: rapidocr-onnxruntime 1.4.x 声明 Requires-Python < 3.13
 # 升级依赖请在本机验证全部测试通过后重新生成
 annotated-types==0.8.0
 anyio==4.14.2

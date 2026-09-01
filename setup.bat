@@ -6,19 +6,26 @@ setlocal EnableDelayedExpansion
 
 echo ===== fuck_DXSTJ environment setup =====
 
-rem ---- 1. locate Python 3.11 (py launcher first, then PATH python) ----
+rem ---- 1. locate Python 3.11 or 3.12 (py launcher first, then PATH python) ----
 set "PYCMD="
 py -3.11 --version >nul 2>&1
 if not errorlevel 1 set "PYCMD=py -3.11"
 
 if not defined PYCMD (
-    python -c "import sys; sys.exit(0 if sys.version_info[:2]==(3,11) else 1)" >nul 2>&1
+    py -3.12 --version >nul 2>&1
+    if not errorlevel 1 set "PYCMD=py -3.12"
+)
+
+if not defined PYCMD (
+    python -c "import sys; sys.exit(0 if sys.version_info[:2] in ((3,11),(3,12)) else 1)" >nul 2>&1
     if not errorlevel 1 set "PYCMD=python"
 )
 
 if not defined PYCMD (
-    echo [ERROR] Python 3.11 not found.
-    echo Install it from https://www.python.org/downloads/release/python-3119/
+    echo [ERROR] Python 3.11 or 3.12 not found.
+    echo Supported: Python 3.11 / 3.12. Python 3.13+ is NOT supported yet
+    echo   (rapidocr-onnxruntime 1.4.x requires Python ^< 3.13).
+    echo Install from https://www.python.org/downloads/
     echo and check "Add to PATH" during installation.
     pause & exit /b 1
 )
