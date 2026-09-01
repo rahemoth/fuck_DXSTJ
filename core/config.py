@@ -34,9 +34,8 @@ DEFAULT_CONFIG = {
         "confidence_threshold": 0.55,
     },
     "web": {
-        "default_browser": "",           # 默认浏览器: "" 未选择 / edge / chrome(拉起与调试端口都只处理它)
-        "cdp_port": 9222,                # 浏览器调试端口(网页版模式)
-        "restart_browser": False,        # 浏览器在运行但未开调试端口时,自动重启浏览器(标签页可恢复)
+        "default_browser": "",           # 默认浏览器: "" 未选择 / edge / chrome(程序拉起该浏览器的专用实例)
+        "cdp_port": 9222,                # 专用浏览器调试端口(网页版模式)
         "url_keywords": ["chaoxing", "mooc"],  # 学习通页面 URL 特征
         "wait_page_timeout": 180,        # 等待用户打开做题页的超时(秒)
         "q_delay": [3.0, 8.0],           # 每题间隔随机秒数(防检测)

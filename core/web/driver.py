@@ -161,16 +161,6 @@ def _port_open(port: int) -> bool:
         return s.connect_ex(("127.0.0.1", port)) == 0
 
 
-def _browser_process_running() -> bool:
-    """是否有 Chrome/Edge 进程在运行(含后台常驻实例)"""
-    try:
-        out = subprocess.run(["tasklist", "/FO", "CSV"], capture_output=True,
-                             text=True, timeout=10).stdout
-    except Exception:
-        return False
-    return any(name in out for name in ("msedge.exe", "chrome.exe"))
-
-
 def _find_browser_exe(browser: str = "") -> str | None:
     """探测浏览器可执行文件(注册表 App Paths + 常见安装路径)。
 
@@ -217,17 +207,23 @@ def _find_browser_exe(browser: str = "") -> str | None:
     return None
 
 
+def _managed_profile_dir() -> str:
+    """程序专用浏览器配置目录(独立于用户日常浏览器,登录态/标签页互不影响)"""
+    base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
+    d = os.path.join(base, "fuck_DXSTJ", "browser-profile")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
 def _ensure_cdp_browser(pw, port: int, web_cfg: dict, stop_check=None):
     """确保调试端口可用并返回 CDP 浏览器对象。
 
-    三种情况:
-    1. 端口已开 → 直接连
-    2. 端口未开但浏览器已在运行 → 正常启动的浏览器不带调试端口,
-       且新拉起的进程会因单实例机制转交后退出,端口永远起不来:
-       - restart_browser=true: 自动结束浏览器进程并以调试端口重启
-         (Edge 重启后默认恢复标签页,登录态保留)
-       - 否则报错并给出操作指引
-    3. 浏览器未运行 → 自动以调试端口拉起
+    方案:程序专用浏览器实例(独立 user-data-dir + 调试端口)。
+    Chromium 136+ 出于安全考虑,默认配置目录下 --remote-debugging-port 会被
+    静默忽略,因此必须使用独立数据目录。该实例与用户日常浏览器互不干扰
+    (数据目录不同 = 独立进程树,可同时运行,无需杀/重启用户浏览器)。
+
+    首次使用需在弹出的专用浏览器窗口中登录一次学习通,之后登录态保留。
     """
     url = f"http://127.0.0.1:{port}"
     if _port_open(port):
@@ -238,37 +234,21 @@ def _ensure_cdp_browser(pw, port: int, web_cfg: dict, stop_check=None):
         raise RuntimeError(
             "未设置默认浏览器。请先在【设置 → 网页版】中选择默认浏览器(Edge / Chrome)。")
 
-    if _browser_process_running():
-        if not web_cfg.get("restart_browser", False):
-            raise RuntimeError(
-                "浏览器已在运行,但未开启调试端口,无法连接。\n"
-                "两种解决办法(任选其一):\n"
-                "  1. 完全退出浏览器(注意托盘区后台实例也要退出),再点开始,\n"
-                "     程序会自动以调试端口重新拉起;\n"
-                "  2. 在【设置 → 网页版】中通过「一键开启调试端口」修改快捷方式,\n"
-                "     之后每次正常打开浏览器都自带端口,无需重启。")
-        # 自动重启浏览器
-        logger.info("restart_browser=true:结束现有浏览器进程 ...")
-        for name in ("msedge.exe", "chrome.exe"):
-            subprocess.run(["taskkill", "/F", "/IM", name],
-                           capture_output=True, timeout=15)
-        for _ in range(10):
-            if not _browser_process_running():
-                break
-            time.sleep(1)
-        time.sleep(1)
-
     browser_name = {"edge": "Edge", "chrome": "Chrome"}[browser]
-    logger.info(f"端口 {port} 无浏览器,自动以调试端口拉起 {browser_name} ...")
+    logger.info(f"端口 {port} 无浏览器,自动拉起 {browser_name}(程序专用配置,不影响日常浏览器)...")
     exe = _find_browser_exe(browser)
     if not exe:
         raise RuntimeError(
-            f"未找到 {browser_name}。请确认已安装,或手动以调试端口启动:\n"
-            f"  {browser_name.lower()}.exe --remote-debugging-port={port}")
-    # --restore-last-session: 强杀重启后自动恢复之前的标签页
-    # (Chrome 强杀后默认弹崩溃横幅不恢复;用户打开的学习通页会自动回来)
-    subprocess.Popen([exe, f"--remote-debugging-port={port}", "--restore-last-session"],
-                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            f"未找到 {browser_name}。请确认已安装,或在设置中改选另一浏览器。")
+    profile = _managed_profile_dir()
+    subprocess.Popen([
+        exe,
+        f"--remote-debugging-port={port}",
+        f"--user-data-dir={profile}",
+        "--no-first-run",
+        "--restore-last-session",
+        "about:blank",
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     for _ in range(20):
         time.sleep(1)
         if stop_check:
@@ -276,9 +256,9 @@ def _ensure_cdp_browser(pw, port: int, web_cfg: dict, stop_check=None):
         if _port_open(port):
             return pw.chromium.connect_over_cdp(url)
     raise RuntimeError(
-        "浏览器启动后调试端口仍不可达。\n"
-        "常见原因:浏览器有残留的后台/托盘进程占用了单实例锁,\n"
-        "请在任务管理器中结束所有 msedge/chrome 进程后重试。")
+        "专用浏览器启动后调试端口仍不可达。\n"
+        "常见原因:浏览器启动失败或被安全软件拦截,\n"
+        "请手动运行浏览器确认可用后重试。")
 
 
 def test_connection(web_cfg: dict) -> tuple[bool, str]:
@@ -290,12 +270,10 @@ def test_connection(web_cfg: dict) -> tuple[bool, str]:
     keywords = web_cfg.get("url_keywords", ["chaoxing", "mooc"])
 
     if not _port_open(port):
-        if _browser_process_running():
-            return False, (
-                f"浏览器在运行但调试端口 {port} 未开启(正常启动的浏览器不带端口)。\n"
-                f"请完全退出浏览器(含托盘后台)后由程序重新拉起,\n"
-                f"或设置 web.restart_browser: true 自动重启浏览器。")
-        return False, f"调试端口 {port} 无浏览器。点「开始」将自动拉起 Chrome/Edge。"
+        return False, (
+            f"调试端口 {port} 无浏览器(未就绪属正常)。\n"
+            f"点「开始」将自动拉起程序专用浏览器窗口(独立配置,不影响日常浏览器),\n"
+            f"首次使用请在弹出的窗口中登录学习通一次。")
 
     pw = sync_playwright().start()
     try:

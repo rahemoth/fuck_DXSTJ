@@ -32,10 +32,8 @@ ocr:
   retry_threshold: 0.3         # 页面识别不完整时降阈值重识别(单字符选项易漏检)
 
 web:                            # 网页版模式(GUI 顶部下拉切换)
-  default_browser: ''           # 默认浏览器(edge/chrome);拉起浏览器与一键开端口都只处理它,必选
-  cdp_port: 9222                # 浏览器调试端口;浏览器未启动时自动拉起默认浏览器
-  restart_browser: false        # true=浏览器在运行但未开调试端口时,自动关闭并以调试端口重启
-                               # (Edge 重启后默认恢复标签页,学习通登录态保留)
+  default_browser: ''           # 默认浏览器(edge/chrome),必选;程序将拉起该浏览器的专用实例
+  cdp_port: 9222                # 专用浏览器调试端口(独立配置,不影响日常浏览器)
   url_keywords:                 # 学习通页面 URL 特征(用于定位做题标签页)
   - chaoxing
   - mooc
