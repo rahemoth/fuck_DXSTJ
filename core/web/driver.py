@@ -151,6 +151,26 @@ CLICK_JS = r"""([qi, label]) => {
 }"""
 
 
+# ---------- 注入页面的 JS:滚动找新题(长页懒加载/需滚动) ----------
+
+SCROLL_JS = r"""() => {
+    let moved = false;
+    const before = window.scrollY || document.documentElement.scrollTop || 0;
+    window.scrollBy(0, Math.floor(window.innerHeight * 0.8));
+    const after = window.scrollY || document.documentElement.scrollTop || 0;
+    if (after !== before) moved = true;
+    // 内层滚动容器(学习通部分版式题目区是 div 滚动而非窗口滚动)
+    for (const el of document.querySelectorAll('div')) {
+        if (el.scrollHeight > el.clientHeight + 100 && el.clientHeight > 200) {
+            const b = el.scrollTop;
+            el.scrollTop = el.scrollHeight;
+            if (el.scrollTop !== b) moved = true;
+        }
+    }
+    return moved;
+}"""
+
+
 class StopRequested(Exception):
     pass
 
@@ -218,19 +238,15 @@ def _managed_profile_dir() -> str:
     return d
 
 
-def _ensure_cdp_browser(pw, port: int, web_cfg: dict, stop_check=None):
-    """确保调试端口可用并返回 CDP 浏览器对象。
+def _launch_managed_browser(port: int, web_cfg: dict, stop_check=None,
+                            extra_args: list | None = None) -> None:
+    """拉起程序专用浏览器实例(独立 user-data-dir + 调试端口)。
 
-    方案:程序专用浏览器实例(独立 user-data-dir + 调试端口)。
-    Chromium 136+ 出于安全考虑,默认配置目录下 --remote-debugging-port 会被
-    静默忽略,因此必须使用独立数据目录。该实例与用户日常浏览器互不干扰
-    (数据目录不同 = 独立进程树,可同时运行,无需杀/重启用户浏览器)。
-
-    首次使用需在弹出的专用浏览器窗口中登录一次学习通,之后登录态保留。
+    端口已开则直接返回(复用现有专用实例)。
+    :param extra_args: 附加启动参数(如插件模式的 --load-extension)
     """
-    url = f"http://127.0.0.1:{port}"
     if _port_open(port):
-        return pw.chromium.connect_over_cdp(url)
+        return
 
     browser = web_cfg.get("default_browser", "")
     if not browser:
@@ -244,24 +260,39 @@ def _ensure_cdp_browser(pw, port: int, web_cfg: dict, stop_check=None):
         raise RuntimeError(
             f"未找到 {browser_name}。请确认已安装,或在设置中改选另一浏览器。")
     profile = _managed_profile_dir()
-    subprocess.Popen([
+    args = [
         exe,
         f"--remote-debugging-port={port}",
         f"--user-data-dir={profile}",
         "--no-first-run",
         "--restore-last-session",
-        "about:blank",
-    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    ] + list(extra_args or [])
+    subprocess.Popen(args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     for _ in range(20):
         time.sleep(1)
         if stop_check:
             stop_check()
         if _port_open(port):
-            return pw.chromium.connect_over_cdp(url)
+            return
     raise RuntimeError(
         "专用浏览器启动后调试端口仍不可达。\n"
         "常见原因:浏览器启动失败或被安全软件拦截,\n"
         "请手动运行浏览器确认可用后重试。")
+
+
+def _ensure_cdp_browser(pw, port: int, web_cfg: dict, stop_check=None):
+    """确保调试端口可用并返回 CDP 浏览器对象。
+
+    方案:程序专用浏览器实例(独立 user-data-dir + 调试端口)。
+    Chromium 136+ 出于安全考虑,默认配置目录下 --remote-debugging-port 会被
+    静默忽略,因此必须使用独立数据目录。该实例与用户日常浏览器互不干扰
+    (数据目录不同 = 独立进程树,可同时运行,无需杀/重启用户浏览器)。
+
+    首次使用需在弹出的专用浏览器窗口中登录一次学习通,之后登录态保留。
+    """
+    url = f"http://127.0.0.1:{port}"
+    _launch_managed_browser(port, web_cfg, stop_check=stop_check)
+    return pw.chromium.connect_over_cdp(url)
 
 
 def test_connection(web_cfg: dict) -> tuple[bool, str]:
@@ -380,21 +411,34 @@ class WebExecutor:
 
     # ---------- 主循环 ----------
 
+    def _extract_all(self, page) -> list[tuple]:
+        """遍历页面所有 frame 抽取题目(学习通做题页题目在 iframe 里,
+        page.evaluate 只作用于主框架)。返回 [(frame, item), ...]。"""
+        items = []
+        for frame in page.frames:
+            try:
+                res = frame.evaluate(EXTRACT_JS)
+            except Exception:
+                continue   # 跨域 frame 等无法注入的情况
+            if res:
+                items.extend((frame, it) for it in res)
+        return items
+
     def _loop(self, page):
         q_delay = self.web_cfg.get("q_delay", [3, 8])
         opt_delay = self.web_cfg.get("opt_delay", [0.5, 1.5])
         dry_run = self.cfg["action"].get("dry_run", False)
+        idle_rounds = 0
 
         while not self._stop.is_set():
             self._check_stop()
-            items = page.evaluate(EXTRACT_JS)
+            items = self._extract_all(page)
             if not items:
                 logger.warning("页面未识别到题目容器(选择器未命中),请确认当前是做题页")
                 return
 
-            did = 0
             pending = 0
-            for it in items:
+            for frame, it in items:
                 self._check_stop()
                 q = self._to_question(it)
                 if it["answered"] or q.key in self.processed:
@@ -420,7 +464,7 @@ class WebExecutor:
 
                 if not dry_run:
                     for lb in answer:
-                        ret = page.evaluate(CLICK_JS, [it["idx"], lb])
+                        ret = frame.evaluate(CLICK_JS, [it["idx"], lb])
                         if ret != "ok":
                             logger.warning(f"[网页] 选项 {lb} 点击失败: {ret}")
                         time.sleep(self._rand(opt_delay))
@@ -428,14 +472,30 @@ class WebExecutor:
                     logger.info("[网页] dry-run:跳过点击")
                 self.processed.add(q.key)
                 self.done_count += 1
-                did += 1
                 time.sleep(self._rand(q_delay))
 
-            if pending == 0:
-                logger.info("网页版所有可见题目处理完毕。如需提交,请在页面手动提交")
+            if pending:
+                idle_rounds = 0
+                time.sleep(1.5)
+                continue
+
+            # 无待处理题:滚动找新题(长作业页可能懒加载)
+            scrolled = False
+            for frame in {id(f): f for f, _ in items}.values():
+                try:
+                    if frame.evaluate(SCROLL_JS):
+                        scrolled = True
+                except Exception:
+                    pass
+            if scrolled:
+                idle_rounds = 0
+                time.sleep(1.5)
+                continue
+            idle_rounds += 1
+            if idle_rounds >= 2:
+                logger.info("网页版所有题目处理完毕。如需提交,请在页面手动提交")
                 return
-            # 有未处理的(如刚渲染出来)再扫一轮
-            time.sleep(2)
+            time.sleep(1.5)
 
     # ---------- 工具 ----------
 
