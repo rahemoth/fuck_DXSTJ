@@ -171,31 +171,46 @@ def _browser_process_running() -> bool:
     return any(name in out for name in ("msedge.exe", "chrome.exe"))
 
 
-def _find_browser_exe() -> str | None:
-    """探测本机 Chrome/Edge 可执行文件(注册表 App Paths + 常见安装路径)"""
+def _find_browser_exe(browser: str = "") -> str | None:
+    """探测浏览器可执行文件(注册表 App Paths + 常见安装路径)。
+
+    :param browser: "" = 任意(Chrome 优先); "edge" / "chrome" = 指定浏览器
+    """
     import os
     import winreg
 
+    if browser in ("edge", "chrome"):
+        names = ({"edge": "msedge.exe", "chrome": "chrome.exe"}[browser],)
+    else:
+        names = ("chrome.exe", "msedge.exe")
+
+    # 浏览器安装子路径:exe 名 → {环境变量: 相对路径}
+    subs = {
+        "chrome.exe": {
+            "LOCALAPPDATA": r"Google\Chrome\Application\chrome.exe",
+            "PROGRAMFILES": r"Google\Chrome\Application\chrome.exe",
+            "PROGRAMFILES(X86)": r"Google\Chrome\Application\chrome.exe",
+        },
+        "msedge.exe": {
+            "PROGRAMFILES": r"Microsoft\Edge\Application\msedge.exe",
+            "PROGRAMFILES(X86)": r"Microsoft\Edge\Application\msedge.exe",
+        },
+    }
+
     candidates = []
-    # 注册表 App Paths
-    for name in ("chrome.exe", "msedge.exe"):
+    for name in names:
+        # 注册表 App Paths
         try:
             with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
                                 rf"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\{name}") as k:
                 candidates.append(winreg.QueryValueEx(k, "")[0])
         except OSError:
             pass
-    # 常见安装路径
-    for env, sub in (
-        ("LOCALAPPDATA", rf"Google\Chrome\Application\chrome.exe"),
-        ("PROGRAMFILES", rf"Google\Chrome\Application\chrome.exe"),
-        ("PROGRAMFILES(X86)", rf"Google\Chrome\Application\chrome.exe"),
-        ("PROGRAMFILES(X86)", rf"Microsoft\Edge\Application\msedge.exe"),
-        ("PROGRAMFILES", rf"Microsoft\Edge\Application\msedge.exe"),
-    ):
-        base = os.environ.get(env)
-        if base:
-            candidates.append(os.path.join(base, sub))
+        # 常见安装路径
+        for env, sub in subs[name].items():
+            base = os.environ.get(env)
+            if base:
+                candidates.append(os.path.join(base, sub))
     for c in candidates:
         if c and os.path.isfile(c):
             return c
@@ -218,6 +233,11 @@ def _ensure_cdp_browser(pw, port: int, web_cfg: dict, stop_check=None):
     if _port_open(port):
         return pw.chromium.connect_over_cdp(url)
 
+    browser = web_cfg.get("default_browser", "")
+    if not browser:
+        raise RuntimeError(
+            "未设置默认浏览器。请先在【设置 → 网页版】中选择默认浏览器(Edge / Chrome)。")
+
     if _browser_process_running():
         if not web_cfg.get("restart_browser", False):
             raise RuntimeError(
@@ -225,8 +245,8 @@ def _ensure_cdp_browser(pw, port: int, web_cfg: dict, stop_check=None):
                 "两种解决办法(任选其一):\n"
                 "  1. 完全退出浏览器(注意托盘区后台实例也要退出),再点开始,\n"
                 "     程序会自动以调试端口重新拉起;\n"
-                "  2. 在 config.yaml 的 web 段设置 restart_browser: true,\n"
-                "     程序将自动关闭并以调试端口重启浏览器(标签页可恢复,登录态保留)。")
+                "  2. 在【设置 → 网页版】中通过「一键开启调试端口」修改快捷方式,\n"
+                "     之后每次正常打开浏览器都自带端口,无需重启。")
         # 自动重启浏览器
         logger.info("restart_browser=true:结束现有浏览器进程 ...")
         for name in ("msedge.exe", "chrome.exe"):
@@ -238,12 +258,13 @@ def _ensure_cdp_browser(pw, port: int, web_cfg: dict, stop_check=None):
             time.sleep(1)
         time.sleep(1)
 
-    logger.info(f"端口 {port} 无浏览器,自动以调试端口拉起 Chrome/Edge ...")
-    exe = _find_browser_exe()
+    browser_name = {"edge": "Edge", "chrome": "Chrome"}[browser]
+    logger.info(f"端口 {port} 无浏览器,自动以调试端口拉起 {browser_name} ...")
+    exe = _find_browser_exe(browser)
     if not exe:
         raise RuntimeError(
-            f"未找到可用的 Chrome/Edge。请手动以调试端口启动浏览器:\n"
-            f"  chrome.exe --remote-debugging-port={port}")
+            f"未找到 {browser_name}。请确认已安装,或手动以调试端口启动:\n"
+            f"  {browser_name.lower()}.exe --remote-debugging-port={port}")
     # --restore-last-session: 强杀重启后自动恢复之前的标签页
     # (Chrome 强杀后默认弹崩溃横幅不恢复;用户打开的学习通页会自动回来)
     subprocess.Popen([exe, f"--remote-debugging-port={port}", "--restore-last-session"],

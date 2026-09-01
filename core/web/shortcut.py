@@ -16,6 +16,9 @@ logger = get_logger("web.shortcut")
 # 快捷方式目标对应的浏览器(用于识别该快捷方式是否是 Edge/Chrome)
 BROWSER_NAMES = ("msedge.exe", "chrome.exe")
 
+# 默认浏览器标识 → 目标 exe 名
+BROWSER_EXE = {"edge": "msedge.exe", "chrome": "chrome.exe"}
+
 
 def _powershell(args: list[str]) -> tuple[int, str]:
     """执行 PowerShell 命令,返回 (returncode, 输出)"""
@@ -24,10 +27,11 @@ def _powershell(args: list[str]) -> tuple[int, str]:
     return r.returncode, (r.stdout or "") + (r.stderr or "")
 
 
-def find_shortcuts() -> list[dict]:
+def find_shortcuts(browser: str = "") -> list[dict]:
     """扫描桌面/快速启动/开始菜单中的 Edge/Chrome 快捷方式。
 
-    返回 [{path, target, browser, has_port, port}]:
+    :param browser: "" = 全部; "edge" / "chrome" = 只扫该浏览器
+    返回 [{path, target, has_port}]:
     - has_port: 目标是否已含 --remote-debugging-port
     """
     dirs = []
@@ -71,9 +75,10 @@ Get-ChildItem -Path @('%s') -Filter *.lnk -Recurse -ErrorAction SilentlyContinue
         data = [data]
 
     result = []
+    names = (BROWSER_EXE[browser],) if browser in BROWSER_EXE else BROWSER_NAMES
     for item in data:
         target = (item.get("Target") or "").strip().lower()
-        if not any(name in target for name in BROWSER_NAMES):
+        if not any(name in target for name in names):
             continue
         result.append({
             "path": item["Path"],
@@ -106,11 +111,12 @@ if ($lnk.Arguments -match 'remote-debugging-port') {
     return True, f"已追加 --remote-debugging-port={port}"
 
 
-def add_port_to_all(port: int = 9222) -> list[dict]:
-    """为所有找到的 Edge/Chrome 快捷方式追加端口。
+def add_port_to_all(port: int = 9222, browser: str = "") -> list[dict]:
+    """为找到的快捷方式追加端口。
+    :param browser: "" = 全部浏览器; "edge" / "chrome" = 只处理该浏览器
     返回每个快捷方式的处理结果 [{path, ok, msg}]。"""
     results = []
-    for sc in find_shortcuts():
+    for sc in find_shortcuts(browser):
         ok, msg = add_port_to_shortcut(sc["path"], port)
         logger.info(f"[快捷方式] {sc['path']}: {msg}")
         results.append({"path": sc["path"], "ok": ok, "msg": msg})

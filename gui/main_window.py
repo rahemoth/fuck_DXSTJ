@@ -118,23 +118,6 @@ class WebConnectWorker(QThread):
             self.result_signal.emit(False, f"网页版连接测试异常: {e}")
 
 
-class ShortcutPortWorker(QThread):
-    """后台线程:为浏览器快捷方式一键追加调试端口参数"""
-    result_signal = Signal(list)
-
-    def __init__(self, port: int):
-        super().__init__()
-        self.port = port
-
-    def run(self):
-        from core.web.shortcut import add_port_to_all
-        try:
-            self.result_signal.emit(add_port_to_all(self.port))
-        except Exception as e:
-            self.result_signal.emit([{"path": "", "ok": False,
-                                      "msg": f"快捷方式处理异常: {e}"}])
-
-
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -193,14 +176,6 @@ class MainWindow(QMainWindow):
         self.btn_env = QPushButton("环境检测")
         self.btn_env.clicked.connect(self.on_env_detect)
         top.addWidget(self.btn_env)
-
-        self.btn_port = QPushButton("一键开启调试端口")
-        self.btn_port.setToolTip(
-            "为桌面/开始菜单/任务栏的 Edge/Chrome 快捷方式追加 --remote-debugging-port 参数。\n"
-            "之后每次正常打开浏览器都自带调试端口,程序无需重启浏览器即可直连。\n"
-            "改完后需完全退出并重新打开浏览器才生效。")
-        self.btn_port.clicked.connect(self.on_add_port)
-        top.addWidget(self.btn_port)
         root.addLayout(top)
 
         # 中部:题目预览 + 统计
@@ -292,38 +267,6 @@ class MainWindow(QMainWindow):
             self.status_label.setText("● 网页版未就绪")
             self.status_label.setStyleSheet("color: orange; font-weight: bold;")
             self.logger.warning(f"网页版连接测试失败: {msg}")
-
-    def on_add_port(self):
-        """一键为浏览器快捷方式追加调试端口参数"""
-        port = Config.get()["web"].get("cdp_port", 9222)
-        ret = QMessageBox.question(
-            self, "一键开启调试端口",
-            f"将为桌面/开始菜单/任务栏中的 Edge/Chrome 快捷方式追加\n"
-            f"--remote-debugging-port={port} 参数。\n\n"
-            f"之后每次正常打开浏览器都自带调试端口,\n"
-            f"程序可直接连接,无需重启浏览器。\n\n"
-            f"注意:开启调试端口期间本机程序均可控制该浏览器,\n"
-            f"敏感操作(网银等)建议使用未开启端口的浏览器。\n\n"
-            f"是否继续?",
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
-        if ret != QMessageBox.Yes:
-            return
-        self.btn_port.setEnabled(False)
-        self.btn_port.setText("处理中...")
-        self._sc_worker = ShortcutPortWorker(port)
-        self._sc_worker.result_signal.connect(self._on_port_added)
-        self._sc_worker.start()
-
-    def _on_port_added(self, results: list):
-        self.btn_port.setEnabled(True)
-        self.btn_port.setText("一键开启调试端口")
-        ok = sum(1 for r in results if r["ok"])
-        lines = [f"{('√' if r['ok'] else '×')} {r['msg']}\n   {r['path']}" for r in results]
-        QMessageBox.information(
-            self, "调试端口",
-            f"处理完成:{ok}/{len(results)} 个快捷方式成功。\n\n" + "\n".join(lines) +
-            "\n\n请完全退出浏览器后重新打开(开始菜单/桌面/任务栏图标),即可生效。")
-        self.logger.info(f"快捷方式调试端口处理完成: {ok}/{len(results)} 成功")
 
     # ---------- 环境检测 ----------
 

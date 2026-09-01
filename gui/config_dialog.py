@@ -87,6 +87,38 @@ class ConfigDialog(QDialog):
         self.title_keywords.setPlaceholderText("学习通")
         form.addRow("窗口标题关键词(逗号分隔)", self.title_keywords)
 
+        # ---- 网页版配置 ----
+        form.addRow(QLabel("—— 网页版 ——"))
+        self.default_browser = QComboBox()
+        self.default_browser.addItem("(未选择)", "")
+        self.default_browser.addItem("Edge", "edge")
+        self.default_browser.addItem("Chrome", "chrome")
+        saved_browser = cfg.get("web", {}).get("default_browser", "")
+        idx = self.default_browser.findData(saved_browser)
+        self.default_browser.setCurrentIndex(idx if idx >= 0 else 0)
+        self.default_browser.setToolTip(
+            "网页版模式自动拉起/重启浏览器时只使用该浏览器;\n"
+            "一键开启调试端口也只处理该浏览器的快捷方式")
+        form.addRow("默认浏览器", self.default_browser)
+
+        port_row = QHBoxLayout()
+        self.cdp_port = QSpinBox()
+        self.cdp_port.setRange(1024, 65535)
+        self.cdp_port.setValue(int(cfg.get("web", {}).get("cdp_port", 9222)))
+        port_row.addWidget(self.cdp_port)
+        self.btn_port = QPushButton("一键开启调试端口")
+        self.btn_port.setToolTip(
+            "为默认浏览器的快捷方式(桌面/开始菜单/任务栏)追加 --remote-debugging-port 参数。\n"
+            "之后每次正常打开浏览器都自带调试端口,程序无需重启浏览器即可直连。\n"
+            "改完后需完全退出并重新打开浏览器才生效。")
+        self.btn_port.clicked.connect(self.on_add_port)
+        port_row.addWidget(self.btn_port)
+        form.addRow("调试端口", port_row)
+
+        self.port_status = QLabel("")
+        self.port_status.setWordWrap(True)
+        form.addRow("", self.port_status)
+
         layout.addLayout(form)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
@@ -148,6 +180,9 @@ class ConfigDialog(QDialog):
     def _on_task_finished(self, task: str, ok: bool, payload):
         self.btn_models.setEnabled(True)
         self.btn_ping.setEnabled(True)
+        if task == "port":
+            self._on_port_finished(ok, payload)
+            return
         if task == "models":
             if not ok:
                 self.net_status.setText(f"获取失败: {payload}")
@@ -169,6 +204,43 @@ class ConfigDialog(QDialog):
             self.net_status.setText(
                 f"连接成功,延迟 {elapsed * 1000:.0f} ms,模型回复: {reply[:30]}")
             self.net_status.setStyleSheet("color: green;")
+
+    # ---------- 一键开启调试端口 ----------
+
+    def on_add_port(self):
+        """为默认浏览器的快捷方式追加调试端口参数(后台线程执行)"""
+        browser = self.default_browser.currentData()
+        if not browser:
+            QMessageBox.warning(self, "缺少配置",
+                                "请先选择默认浏览器(Edge / Chrome)")
+            return
+        port = self.cdp_port.value()
+        self.btn_port.setEnabled(False)
+        self.port_status.setText("正在处理快捷方式...")
+        self.port_status.setStyleSheet("color: gray;")
+
+        def worker():
+            from core.web.shortcut import add_port_to_all
+            try:
+                results = add_port_to_all(port, browser=browser)
+                self._bridge.finished.emit("port", True, results)
+            except Exception as e:
+                self._bridge.finished.emit("port", False, str(e))
+
+        threading.Thread(target=worker, daemon=True).start()
+
+    def _on_port_finished(self, ok: bool, payload):
+        self.btn_port.setEnabled(True)
+        if not ok:
+            self.port_status.setText(f"处理失败: {payload}")
+            self.port_status.setStyleSheet("color: red;")
+            return
+        done = sum(1 for r in payload if r["ok"])
+        lines = "\n".join(f"{'√' if r['ok'] else '×'} {r['msg']}" for r in payload)
+        self.port_status.setText(
+            f"处理完成:{done}/{len(payload)} 个快捷方式成功。\n{lines}\n"
+            f"请完全退出浏览器后重新打开即可生效。")
+        self.port_status.setStyleSheet("color: green;" if done else "color: red;")
 
     # ---------- 收集 ----------
 
@@ -206,5 +278,9 @@ class ConfigDialog(QDialog):
             },
             "window": {
                 "title_keywords": keywords or ["学习通"],
+            },
+            "web": {
+                "default_browser": self.default_browser.currentData(),
+                "cdp_port": self.cdp_port.value(),
             },
         }
