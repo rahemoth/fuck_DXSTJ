@@ -1,18 +1,21 @@
 # -*- coding: utf-8 -*-
 """
-网页版执行器:通过 CDP 直连用户浏览器(Playwright attach),DOM 读题 → LLM 作答 → JS 点击。
+网页版执行器:通过 CDP 直连浏览器(Playwright attach),DOM 读题 → LLM 作答 → JS 点击。
 
 与桌面版 executor 同构(run/stop/emit),GUI Worker 可直接承载。
 
-使用前提:
-- 浏览器需以调试端口启动(Chrome/Edge: --remote-debugging-port=9222)
-- 未启动时代码会自动拉起本机 Chrome/Edge(使用默认用户配置,需浏览器已完全退出)
-- 用户在该浏览器中登录学习通并打开作业/考试页面
+使用方式:
+- 程序拉起默认浏览器的专用实例(独立 user-data-dir + 调试端口)
+  注:Chromium 136+ 在默认配置目录下会静默忽略 --remote-debugging-port,
+  必须使用独立数据目录;专用实例与用户日常浏览器互不干扰,可同时运行
+- 首次使用需在专用实例中登录学习通一次,之后登录态保留
+- 用户在专用实例中打开作业/考试页面,程序自动发现并注入
 
 优势(相对客户端 OCR 方案):
 - DOM 读题零 OCR 错误;题目全部在文档流中,无需滚动导航
 - JS 派发点击,不需要窗口前台/焦点
 """
+import os
 import subprocess
 import threading
 import time
