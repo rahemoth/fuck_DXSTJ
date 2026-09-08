@@ -123,19 +123,19 @@ def test_judge_question():
 
 
 def test_unsupported_question_type_skipped():
-    """填空题等不支持的题型不应污染上一题"""
+    """不支持的题型(如论述/连线)不应污染上一题"""
     locator = QuestionLocator()
     blocks = make_blocks([
         ("7. (单选题)题目内容", 162, 369),
         ("甲", 212, 428), ("乙", 212, 475),
-        ("9. (填空题)这是一个填空题", 162, 560),
-        ("这里是要填的空", 212, 620),
+        ("9. (论述题)这是一个论述题", 162, 560),
+        ("这里是要写的正文", 212, 620),
     ])
     questions = locator.locate_all(blocks)
     assert len(questions) == 1
     q = questions[0]
     assert q.options == {"A": "甲", "B": "乙"}
-    assert "填空" not in q.stem
+    assert "论述" not in q.stem
     assert q.is_answerable
 
 
@@ -469,3 +469,266 @@ def test_zoom_merged_blocks_must_be_sorted():
     q6_bad = questions_bad[0]
     # 演示乱序后果:Q6 区域为空(其选项块索引上属于 Q7 之后)
     assert not q6_bad.options
+
+
+def test_letter_block_with_bracket_noise():
+    """字母圈被 OCR 读成 "A）"(带右括号,2026-09 缩小窗口 Q3 放大重识别实测):
+    应剔除标点后识别为字母 A;否则 A 行被当题干续行,标签只剩 B/C/D,
+    触发不完整拦截——题目在页底时微滚无效,该题将永远无法作答"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("3. (单选题)3+3=", 101, 479),
+        ("A）", 112, 557), ("6", 148, 559),
+        ("B", 115, 608), ("7", 150, 608),
+        ("C ", 115, 657), ("8", 148, 657),
+        ("D", 114, 706), ("9", 148, 706),
+    ])
+    questions = locator.locate_all(blocks, page_height=800)
+    assert len(questions) == 1
+    q = questions[0]
+    assert q.options == {"A": "6", "B": "7", "C": "8", "D": "9"}
+    assert q.complete
+    assert q.is_answerable
+
+
+def test_option_re_accepts_bracket_separator():
+    """字母与文本同块且分隔符是右括号:"A）1"(缩小窗口 zoom 噪声形态)"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("1. (单选题)1+1=", 101, 300),
+        ("A）1", 112, 400),
+        ("B", 115, 450), ("2", 150, 450),
+        ("C", 115, 500), ("3", 150, 500),
+        ("D", 114, 550), ("4", 150, 550),
+    ])
+    questions = locator.locate_all(blocks, page_height=700)
+    q = questions[0]
+    assert q.options["A"] == "1"
+    assert list(q.options) == ["A", "B", "C", "D"]
+
+
+def test_answer_card_excluded_in_narrow_window():
+    """窄窗口答题卡混入(实测1200宽时答题卡左缘x=1016,距固定边界1000仅16px;
+    半屏960宽时左缘≈770,深陷内容区):传截图宽度后右界动态收缩,
+    答题卡的题号按钮/状态文字不得并入选项文本——否则 LLM 看到"B. 22"
+    这类被污染的选项会答错 → 错选"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("1. (单选题)1+1=", 102, 338),
+        ("A", 114, 417), ("1", 148, 418),
+        ("B", 114, 466), ("2", 148, 466),
+        ("C", 115, 515), ("3", 148, 514),
+        ("D", 114, 564), ("4", 150, 564),
+        # 答题卡(960宽窗口左缘≈770):题型头 + 题号按钮与选项行同 y
+        ("单选题（100分）", 790, 172),
+        ("1", 800, 417), ("2", 800, 466),
+        ("已完成", 780, 550),
+    ])
+    # 不传宽度(旧行为,模拟漏传):答题卡块混入,选项文本被污染
+    q_old = locator.locate_all(blocks, page_height=750)[0]
+    assert q_old.options["A"] == "11"
+    assert q_old.options["B"] == "22"
+    # 传入截图宽度:答题卡被挡在内容区外
+    q = locator.locate_all(blocks, page_height=750, page_width=960)[0]
+    assert q.options == {"A": "1", "B": "2", "C": "3", "D": "4"}
+    assert q.complete
+    assert q.is_answerable
+
+
+def test_spurious_letter_block_not_override_real_letter():
+    """同行出现两个疑似字母块(Q2 视图实测:字母圈 B@116 与 文本"6"被误读
+    成的伪字母 D@154):取最左的真字母圈,误读块不得覆盖——否则 B 标签
+    丢失且点击坐标落到误读块位置(错选)"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("2. (单选题)2+2=", 101, 193),
+        ("B", 116, 300), ("D", 154, 301),     # B 的字母圈 + "6"误读成的"D"
+        ("C", 116, 349), ("8", 152, 349),
+        ("D", 116, 397), ("10", 152, 394),
+    ])
+    questions = locator.locate_all(blocks, page_height=750)
+    q = questions[0]
+    assert list(q.options) == ["B", "C", "D"]
+    assert q.options["C"] == "8" and q.options["D"] == "10"
+    # B 的坐标来自真字母圈(x≈116),不是误读块(x≈154)
+    assert q.option_centers["B"][0] < 130
+    # 标签从 B 开始 → 不连续,触发兜底(放大重识别)而非误作答
+    assert not q.complete
+    assert not q.is_answerable
+
+
+# ---------- 填空题 / 简答题(2026-09 布局采集) ----------
+
+def test_fill_question_parsed():
+    """填空题:锚点 + 题干(下划线空位) + "第N空"输入框标签。
+    布局取自 2026-09 真实作业页(1920全屏)采集:标签在输入框内左侧,
+    点击点=标签右缘+blank_click_dx(默认100),y=标签中心。"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("消息", 34, 140),                       # 左侧导航(过滤)
+        ("1. (填空题)计算20+99=____,22*5=____", 435, 348),
+        ("第1空", 435, 428),
+        ("第2空", 435, 623),
+    ])
+    questions = locator.locate_all(blocks, page_height=1032, page_width=1920)
+    assert len(questions) == 1
+    q = questions[0]
+    assert q.qtype == "fill"
+    assert q.number == 1
+    assert "20+99" in q.stem and "22*5" in q.stem
+    assert len(q.blanks) == 2
+    b1, b2 = q.blanks
+    assert b1["index"] == 1 and b2["index"] == 2
+    # 点击点:标签右缘+100,同输入行;按 y 序编号
+    assert b1["center"] == (435 + 3 * 12 + 100, 438)
+    assert b2["center"][1] == 633
+    # 内容检测区(标签包围盒外扩)
+    assert b1["region"] == (435, 416, 471 + 500, 460)
+    assert q.complete
+    assert q.is_answerable
+    # prompt 含空数
+    assert "共 2 个空" in q.to_prompt_text()
+
+
+def test_stem_starting_with_number_not_truncated():
+    """回归(2026-09 填空题实测):题干自身以编号开头("2.若等差数列...",
+    教材题干自带题号)不得被当作下一题锚点截断——否则该题题干与
+    "第N空"输入框标签全部丢失,永远无法作答。"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("1. (填空题)", 437, 348),
+        ("2.若等差数列an}中,a1=3,d=2,则第10项an=_", 436, 369),
+        ("第1空", 435, 419),
+        ("2. (填空题)", 436, 539),
+        ("双曲线x^2-2y^2=1的焦距为_", 436, 563),
+        ("第1空", 435, 614),
+    ])
+    questions = locator.locate_all(blocks, page_height=1032, page_width=1920)
+    assert len(questions) == 2
+    q1, q2 = questions
+    assert q1.qtype == "fill" and q1.is_answerable
+    assert "若等差数列" in q1.stem and "第10项" in q1.stem
+    assert len(q1.blanks) == 1
+    assert q2.qtype == "fill" and len(q2.blanks) == 1
+    assert "双曲线" in q2.stem
+
+
+def test_fill_question_label_with_spaces():
+    """OCR 丢空格形态:"第 1 空" 也能锚定输入框"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("1. (填空题)计算20+99=____", 435, 348),
+        ("第 1 空", 435, 428),
+    ])
+    q = locator.locate_all(blocks, page_height=1032, page_width=1920)[0]
+    assert len(q.blanks) == 1
+    assert q.is_answerable
+
+
+def test_fill_question_existing_answer_not_in_stem():
+    """重跑场景:输入框里已有答案文本(与"第N空"标签同一输入行),
+    不得混入题干(LLM 看到旧答案会干扰)也不影响空定位"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("1. (填空题)计算20+99=____", 435, 348),
+        ("第1空", 435, 428),
+        ("119", 490, 429),                        # 已输入的答案
+        ("第2空", 435, 623),
+        ("110", 490, 624),
+    ])
+    q = locator.locate_all(blocks, page_height=1032, page_width=1920)[0]
+    assert q.stem == "计算20+99=____"
+    assert len(q.blanks) == 2
+    assert q.is_answerable
+
+
+def test_fill_question_no_labels_incomplete():
+    """填空题但"第N空"标签全部漏检 → 不完整(触发放大重识别),不得误作答"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("1. (填空题)计算20+99=____", 435, 348),
+    ])
+    q = locator.locate_all(blocks, page_height=1032, page_width=1920)[0]
+    assert q.qtype == "fill"
+    assert not q.blanks
+    assert not q.complete
+    assert q.incomplete_reason == "未识别到填空输入框"
+    assert not q.is_answerable
+
+
+def test_fill_question_bottom_crop():
+    """最后一个输入框贴近视口底部 → 不完整(应滚动,下方可能还有空)"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("1. (填空题)计算20+99=____", 435, 348),
+        ("第1空", 435, 428),
+        ("第2空", 435, 990),                      # region y2=1022 > 1032-60
+    ])
+    q = locator.locate_all(blocks, page_height=1032, page_width=1920)[0]
+    assert not q.complete
+    assert q.incomplete_reason == "输入框贴近视口底部"
+    assert not q.is_answerable
+
+
+def test_short_answer_parsed():
+    """简答题:题干 + 富文本编辑器。工具栏块("段落格式"等)x1 比题干列
+    右移>=25px(CSS padding 特征),须过滤出题干;编辑器点击点=
+    (锚点x+260, 题干底+145)。布局取自 2026-09 真实作业页采集。"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("4. (简答题)", 435, 672),
+        ("简述Python列表的特点", 435, 715),       # 题干续行(与锚点同列)
+        ("段落格式", 460, 745),                    # 工具栏(右移25px)
+        ("字体字号", 560, 745),
+        ("三三三Q田πbet②", 470, 748),
+        ("回)>", 900, 748),
+    ])
+    questions = locator.locate_all(blocks, page_height=1032, page_width=1920)
+    assert len(questions) == 1
+    q = questions[0]
+    assert q.qtype == "short_answer"
+    assert q.number == 4
+    assert q.stem == "简述Python列表的特点"
+    assert "段落格式" not in q.stem and "字体字号" not in q.stem
+    # 编辑器点击点:锚点x+260,题干底(735)+145
+    assert q.editor_center == (435 + 260, 735 + 145)
+    assert q.complete
+    assert q.is_answerable
+    # prompt 含人味文风要求(大学生做课后作业口吻,不过于口语化)
+    assert "标点" in q.to_prompt_text()
+    assert "大学生" in q.to_prompt_text()
+    assert "不要过于口语化" in q.to_prompt_text()
+
+
+def test_short_answer_editor_bottom_crop():
+    """编辑器点击点贴近视口底部 → 不完整(应滚动露出编辑器)"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("4. (简答题)简述Python列表的特点", 435, 900),
+    ])
+    q = locator.locate_all(blocks, page_height=1032, page_width=1920)[0]
+    # 题干底=920,点击点y=1065 > 1032-60
+    assert not q.complete
+    assert q.incomplete_reason == "编辑器贴近视口底部"
+    assert not q.is_answerable
+
+
+def test_fill_short_choice_mixed_page():
+    """混合题型页:选择+填空+简答同屏互不污染"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("1. (单选题)1+1=", 435, 348),
+        ("A", 450, 420), ("2", 486, 421),
+        ("B", 450, 470), ("3", 486, 470),
+        ("2. (填空题)计算20+99=____", 435, 560),
+        ("第1空", 435, 640),
+        ("3. (简答题)简述Python的特点", 435, 760),
+        ("段落格式", 460, 830),
+    ])
+    questions = locator.locate_all(blocks, page_height=1032, page_width=1920)
+    assert len(questions) == 3
+    q1, q2, q3 = questions
+    assert q1.qtype == "single" and q1.options == {"A": "2", "B": "3"}
+    assert q2.qtype == "fill" and len(q2.blanks) == 1
+    assert q3.qtype == "short_answer" and q3.editor_center is not None
+    assert all(q.is_answerable for q in questions)

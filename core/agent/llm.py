@@ -5,6 +5,8 @@ OpenAI 兼容 API 客户端:支持任何 OpenAI 格式的服务
 """
 import time
 
+import concurrent.futures
+
 from openai import OpenAI
 
 from core.log import get_logger
@@ -15,15 +17,36 @@ logger = get_logger("agent.llm")
 class LLMClient:
     def __init__(self, llm_cfg: dict):
         self.cfg = llm_cfg
-        self.client = OpenAI(
-            base_url=llm_cfg["base_url"].rstrip("/"),
-            api_key=llm_cfg["api_key"],
-            timeout=llm_cfg.get("timeout", 60),
-        )
+        self._build_client()
         self.model = llm_cfg["model"]
 
+    def _build_client(self):
+        self.client = OpenAI(
+            base_url=self.cfg["base_url"].rstrip("/"),
+            api_key=self.cfg["api_key"],
+            timeout=self.cfg.get("timeout", 60),
+        )
+
     def chat(self, system: str, user: str) -> str:
-        """发送对话,返回模型回复文本"""
+        """发送对话,返回模型回复文本。
+        网关对长生成会周期发送心跳字节,单次读超时(timeout)永远不触发,
+        实测请求可无限挂起(2026-09-08 E2E 因此卡死 1 小时+),
+        故在工作线程中调用并设硬超时封顶:超时后关闭并重建底层连接
+        强制解除阻塞的读调用,异常向上抛出由 executor 跳过该题。"""
+        hard = float(self.cfg.get("timeout", 60)) * 3
+        ex = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        try:
+            fut = ex.submit(self._chat_blocking, system, user)
+            try:
+                return fut.result(timeout=hard)
+            except concurrent.futures.TimeoutError:
+                self.client.close()      # 断开 socket,解除阻塞线程
+                self._build_client()     # 重建,后续请求继续可用
+                raise TimeoutError(f"LLM 响应超过硬超时 {hard:.0f}s,已强制断开重连")
+        finally:
+            ex.shutdown(wait=False)      # 泄漏线程在 close() 后自行退出
+
+    def _chat_blocking(self, system: str, user: str) -> str:
         resp = self.client.chat.completions.create(
             model=self.model,
             temperature=self.cfg.get("temperature", 0.1),

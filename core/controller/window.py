@@ -113,14 +113,22 @@ class WindowCapture:
 
     def bring_to_front(self):
         """把窗口带到前台(pyautogui 真实点击前调用)。
-        后台进程直接 SetForegroundWindow 会被 Windows 拒绝,
-        用 AttachThreadInput 技巧绕过;失败时点击本身也能激活窗口"""
+        后台进程直接 SetForegroundWindow 会被 Windows 前台锁拒绝,
+        用 AttachThreadInput 技巧绕过;失败时点击本身也能激活窗口。
+        但 SetForegroundWindow 失败 + 窗口被其他窗口(如终端)遮盖时,
+        点击会落到遮盖窗口上——所以先 SetWindowPos 抬到 Z 序顶
+        (不受前台锁限制),保证点击必落在本窗口。"""
         self.ensure_connected()
         try:
             if win32gui.IsIconic(self.hwnd):
                 win32gui.ShowWindow(self.hwnd, win32con.SW_RESTORE)
             if win32gui.GetForegroundWindow() == self.hwnd:
                 return
+            # 先抬 Z 序到顶(不激活):点击落点必在本窗口,点击后再激活
+            ctypes.windll.user32.SetWindowPos(
+                self.hwnd, win32con.HWND_TOP, 0, 0, 0, 0,
+                win32con.SWP_NOMOVE | win32con.SWP_NOSIZE
+                | win32con.SWP_NOACTIVATE)
             import win32api
 
             fg = win32gui.GetForegroundWindow()
@@ -137,7 +145,7 @@ class WindowCapture:
                 if attached:
                     windll.AttachThreadInput(my_tid, fg_tid, False)
         except Exception as e:
-            logger.warning(f"置前窗口失败(可忽略,点击时仍会激活): {e}")
+            logger.warning(f"置前窗口失败(已抬Z序,点击仍会激活): {e}")
 
     def post_scroll(self, notches: int, x: int, y: int):
         """向窗口投递滚轮消息(PostMessage 方式,无需窗口在前台)。

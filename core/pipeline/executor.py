@@ -8,6 +8,7 @@
 
 运行在工作线程中(GUI 通过信号接收事件),支持随时停止。
 """
+import re
 import threading
 import time
 from dataclasses import dataclass
@@ -33,6 +34,8 @@ _SCROLL_CAP = 400
 _FINE_TRIES = 8
 # 连续无法识别页面次数上限
 _UNKNOWN_LIMIT = 60
+# 填空题输入框空状态的占位符"第N空"(键入验证时排除)
+_BLANK_PLACEHOLDER_RE = re.compile(r"^第\s*\d+\s*空$")
 
 
 @dataclass
@@ -67,6 +70,8 @@ class Executor:
         # 统计与状态
         self.done_count = 0
         self.fail_count = 0
+        self._done_keys: set[str] = set()   # 已成功题(题干key去重,避免OCR重读差异重复计数)
+        self._failed_keys: set[str] = set()  # 失败题(题干key去重)
         self.processed: set[str] = set()   # 已处理题目(题干key;窄窗口题号可能被裁剪/误读,不可靠)
         self._unknown_streak = 0
         self._empty_scrolls = 0            # 连续滚动页面无移动(=到底)
@@ -118,24 +123,25 @@ class Executor:
         """执行一步。返回 handled / scrolled / retry / done"""
         img = self.window.screenshot()
         blocks = self.ocr.run(img)
-        questions = self.locator.locate_all(blocks, img.size[1])
+        questions = self.locator.locate_all(blocks, img.size[1], img.size[0])
 
         target, partial = self._pick_target(questions)
         if target is None and partial is not None:
             # 单字符选项(单个数字/字母圈)体积极小,OCR置信度低易整块漏检
             # (实测Q6选项全为单个数字时0.55阈值下全丢),降阈值对同一截图重识别
             blocks = self.ocr.run(img, threshold=self.cfg["ocr"].get("retry_threshold", 0.3))
-            questions = self.locator.locate_all(blocks, img.size[1])
+            questions = self.locator.locate_all(blocks, img.size[1], img.size[0])
             target, partial = self._pick_target(questions)
 
-        if target is None and partial is not None and (
-                not partial.options
-                or (partial.incomplete_reason
-                    and "贴近视口底部" not in partial.incomplete_reason)):
+        if (target is None and partial is not None
+                and "贴近视口底部" not in (partial.incomplete_reason or "")
+                and (not partial.options or partial.incomplete_reason)):
             # 零选项或部分漏检(标签不连续/题干截断/间距过大):
             # RapidOCR 检测阶段就漏掉单字符块(如选项"0"/"1",置信度无关),
             # 裁剪该题区域放大3倍重识别,小目标放大后可检出。
-            # 仅"贴近视口底部"除外:选项在视口外,放大无用,应滚动。
+            # "贴近视口底部"除外(含填空"输入框/编辑器贴近视口底部"):
+            # 输入区在视口外,放大无用,应滚动。填空题的"第N空"标签漏检时
+            # 低阈值放大重识别同样能找回。
             zoomed = self._ocr_zoom_band(img, blocks, partial)
             if zoomed is not None:
                 blocks, questions = zoomed
@@ -200,8 +206,9 @@ class Executor:
         y2 = min(y2, y1 + 420)                 # 选项区不会超过一屏
         if y1 <= 0 or y2 - y1 < 40:
             return None
-        rx1, _, rx2, _ = self.locator.region
-        x1, x2 = max(0, rx1), min(img.size[0], rx2)
+        rx1, _, _, _ = self.locator.region
+        # 右界动态收缩,把窄窗口下左移进入视野的答题卡裁在带外
+        x1, x2 = max(0, rx1), min(img.size[0], self.locator.content_x2(img.size[0]))
         scale = 3
         band = img.crop((x1, y1, x2, y2))
         band = band.resize((band.size[0] * scale, band.size[1] * scale),
@@ -226,7 +233,7 @@ class Executor:
         # (实测Q6选项块被划给Q7,Q6仍空、Q7带着错误选项去作答)
         merged = [b for b in blocks if not (y1 <= (b.box[1] + b.box[3]) / 2 < y2)] + mapped
         merged.sort(key=lambda b: (b.box[1], b.box[0]))
-        questions = self.locator.locate_all(merged, img.size[1])
+        questions = self.locator.locate_all(merged, img.size[1], img.size[0])
         return merged, questions
 
     # ---------- 内部 ----------
@@ -244,7 +251,8 @@ class Executor:
         except StopRequested:
             raise
         except Exception as e:
-            self.fail_count += 1
+            self._failed_keys.add(q.key)
+            self.fail_count = len(self._failed_keys)
             self.processed.add(q.key)   # 跳过也算处理过,避免死循环
             logger.error(f"题目{num}获取答案失败,跳过: {e}")
             if next_btn is not None:
@@ -254,20 +262,106 @@ class Executor:
         logger.info(f"题目{num} 答案: {answer}")
         self.emit(ExecutorEvent("answer", {"answer": answer}))
 
-        # 执行点击(截图对比验证选中状态)
+        # 按题型分发执行(dry-run 下输入方法自身跳过,验证放行)
         self._check_stop()
-        if self.input.dry_run:
+        if q.qtype == "fill":
+            ok = self._fill_blanks(q, answer)
+        elif q.qtype == "short_answer":
+            ok = self._type_answer(q, answer)
+        elif self.input.dry_run:
             self.input.click_options(q.option_centers, answer)
-            self.done_count += 1
-        elif self._click_with_verify(q, answer):
-            self.done_count += 1
+            ok = True
         else:
-            self.fail_count += 1
+            ok = self._click_with_verify(q, answer)
+        if ok:
+            self._done_keys.add(q.key)
+            self.done_count = len(self._done_keys)
+        else:
+            self._failed_keys.add(q.key)
+            self.fail_count = len(self._failed_keys)
         self.processed.add(q.key)
         self._empty_scrolls = 0
 
         if next_btn is not None:
             self._click_next(next_btn)
+
+    def _fill_blanks(self, q: Question, answers: list[str]) -> bool:
+        """填空题:逐空 点击输入框 → Ctrl+A 全选 → 逐字符键入 → 区域 OCR 验证。
+        学习通 JS 禁用粘贴,只能键盘键入(见 InputController.type_text);
+        Ctrl+A 后键入为覆盖式,重试/重跑幂等(不会追加出双份答案)。
+        验证不用暗像素计数:空输入框基线即有 ~108 个暗像素(边框/占位符),
+        短答案增量不足以区分;OCR 直接核对内容更可靠。"""
+        num = q.number if q.number is not None else q.key[:12]
+        ok_all = True
+        for i, blank in enumerate(q.blanks):
+            if i >= len(answers):
+                break
+            cx, cy = blank["center"]
+            text = answers[i]
+            for attempt in range(2):
+                self.input.click_client(cx, cy, label=f"题目{num} 第{blank['index']}空")
+                time.sleep(self.cfg["action"].get("verify_wait", 0.6))
+                self.input.select_all()
+                self.input.type_text(text)
+                time.sleep(self.cfg["action"].get("verify_wait", 0.6))
+                if self.input.dry_run:
+                    break
+                got = self._ocr_region(blank["region"])
+                if got and not _BLANK_PLACEHOLDER_RE.match(got):
+                    logger.info(f"题目{num} 第{blank['index']}空 已填写(OCR: {got!r})")
+                    break
+                if attempt == 0:
+                    logger.warning(
+                        f"题目{num} 第{blank['index']}空 未检出输入内容(OCR: {got!r}),重试")
+            else:
+                logger.warning(f"题目{num} 第{blank['index']}空 重试后仍未检出,请人工检查")
+                ok_all = False
+        return ok_all
+
+    def _type_answer(self, q: Question, answers: list[str]) -> bool:
+        """简答题:点击富文本编辑器 → Ctrl+A 全选 → 逐字符键入 → 区域 OCR 验证。
+        空编辑器点击后光标落在内容区顶部,键入文本从内容区顶部排布;
+        验证区覆盖点击点上下两侧。人味答案均在百字以上,以 OCR 出的
+        文本长度 >= 15 字为已作答判据(空编辑器该区域无文本)。"""
+        num = q.number if q.number is not None else q.key[:12]
+        text = answers[0] if answers else ""
+        cx, cy = q.editor_center
+        region = (cx - 150, cy - 65, cx + 350, cy + 80)
+        for attempt in range(2):
+            self.input.click_client(cx, cy, label=f"题目{num} 简答编辑器")
+            time.sleep(self.cfg["action"].get("verify_wait", 0.6))
+            self.input.select_all()
+            self.input.type_text(text)
+            time.sleep(self.cfg["action"].get("verify_wait", 0.6))
+            if self.input.dry_run:
+                return True
+            got = self._ocr_region(region)
+            if len(got) >= 15:
+                logger.info(f"题目{num} 简答题已作答(OCR前30字: {got[:30]!r})")
+                return True
+            if attempt == 0:
+                logger.warning(f"题目{num} 简答题未检出输入内容(OCR: {got!r}),重试")
+        logger.warning(f"题目{num} 简答题重试后仍未检出,请人工检查")
+        return False
+
+    def _ocr_region(self, region, scale: int = 2) -> str:
+        """裁剪区域放大后 OCR,返回识别文本(键入验证用)。
+        输入框内文字较小,1x 识别率低,放大 2 倍提升召回;
+        右界收缩到内容区右界,排除窄窗口下左侧移入的答题卡文字。"""
+        img = self.window.screenshot()
+        x1, y1, x2, y2 = region
+        x2 = min(x2, self.locator.content_x2(img.size[0]))
+        x1, y1 = max(0, int(x1)), max(0, int(y1))
+        if x2 <= x1 or y2 <= y1:
+            return ""
+        crop = img.crop((x1, y1, x2, y2))
+        if scale != 1:
+            crop = crop.resize((crop.size[0] * scale, crop.size[1] * scale),
+                               Image.LANCZOS)
+        blocks = self.ocr.run(crop,
+                             threshold=self.cfg["ocr"].get("retry_threshold", 0.3))
+        blocks = sorted(blocks, key=lambda b: (b.box[1], b.box[0]))
+        return "".join(b.text.strip() for b in blocks).strip()
 
     def _click_with_verify(self, q: Question, labels: list[str]) -> bool:
         """点击选项并用选中状态检测验证(选项前圆圈选中后变蓝色)。
@@ -335,7 +429,7 @@ class Executor:
         下两行,补点会把已选对的答案改成错的。"""
         try:
             blocks = self.ocr.run(img)
-            for qq in self.locator.locate_all(blocks, img.size[1]):
+            for qq in self.locator.locate_all(blocks, img.size[1], img.size[0]):
                 if qq.key != q.key:
                     continue
                 delta = qq.anchor_y2 - q.anchor_y2

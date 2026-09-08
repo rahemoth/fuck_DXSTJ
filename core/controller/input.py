@@ -5,6 +5,7 @@
 采用 pyautogui(SendInput 真实点击),对 CEF/Chromium 窗口可靠;
 所有点击带随机延时,防检测。
 """
+import ctypes
 import random
 import time
 from contextlib import contextmanager
@@ -18,6 +19,51 @@ logger = get_logger("controller.input")
 
 # 防止 pyautogui 触发 FailSafeException 中断(鼠标移到角落时停止)
 pyautogui.FAILSAFE = False
+
+# ---- SendInput KEYEVENTF_UNICODE:逐字符键入 Unicode 文本 ----
+_INPUT_KEYBOARD = 1
+_KEYEVENTF_UNICODE = 0x0004
+_KEYEVENTF_KEYUP = 0x0002
+
+
+class _KEYBDINPUT(ctypes.Structure):
+    _fields_ = (("wVk", ctypes.c_ushort), ("wScan", ctypes.c_ushort),
+                ("dwFlags", ctypes.c_ulong), ("time", ctypes.c_ulong),
+                ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong)))
+
+
+class _MOUSEINPUT(ctypes.Structure):
+    _fields_ = (("dx", ctypes.c_long), ("dy", ctypes.c_long),
+                ("mouseData", ctypes.c_ulong), ("dwFlags", ctypes.c_ulong),
+                ("time", ctypes.c_ulong),
+                ("dwExtraInfo", ctypes.POINTER(ctypes.c_ulong)))
+
+
+class _HARDWAREINPUT(ctypes.Structure):
+    _fields_ = (("uMsg", ctypes.c_ulong), ("wParamL", ctypes.c_ushort),
+                ("wParamH", ctypes.c_ushort))
+
+
+class _INPUT_UNION(ctypes.Union):
+    _fields_ = (("ki", _KEYBDINPUT), ("mi", _MOUSEINPUT),
+                ("hi", _HARDWAREINPUT))
+
+
+class _INPUT(ctypes.Structure):
+    _fields_ = (("type", ctypes.c_ulong), ("ii", _INPUT_UNION))
+
+
+def _send_unicode_key(ch: str):
+    """发送一个 Unicode 字符的 按下+抬起 事件(与输入法提交字符的事件一致)"""
+    code = ord(ch)
+    for flags in (_KEYEVENTF_UNICODE, _KEYEVENTF_UNICODE | _KEYEVENTF_KEYUP):
+        inp = _INPUT()
+        inp.type = _INPUT_KEYBOARD
+        inp.ii.ki = _KEYBDINPUT(0, code, flags, 0, None)
+        n = ctypes.windll.user32.SendInput(1, ctypes.byref(inp),
+                                           ctypes.sizeof(inp))
+        if n != 1:
+            logger.warning(f"SendInput 失败(返回 {n}, 字符 U+{code:04X})")
 
 
 class InputController:
@@ -134,8 +180,10 @@ class InputController:
             self.window.bring_to_front()
             time.sleep(0.1)
             l, t, r, b = self.window.client_rect_screen()
-            # 内容区左边距空白列(左侧导航 x<100, 题目内容 x>160, 120 为安全空白)
-            sx, sy = self.window.client_to_screen(120, (b - t) // 2)
+            # 焦点点击列:导航图标 x≤53,内容列缩窗时从 x≈102 起(字母圈 114~127),
+            # 全屏时从 x≈435 起。x=70 在两种窗口宽度下都是空白,勿改回 120
+            # (120 会压缩窗字母圈列,radio 下误点即切换已选答案)。
+            sx, sy = self.window.client_to_screen(70, (b - t) // 2)
             pyautogui.click(sx, sy)
             time.sleep(0.15)
             for _ in range(times):
@@ -153,7 +201,8 @@ class InputController:
             self.window.bring_to_front()
             time.sleep(0.15)
             l, t, r, b = self.window.client_rect_screen()
-            sx, sy = self.window.client_to_screen(120, (b - t) // 2)
+            # 同 arrow_down:x=70 是全屏/缩窗都安全的空白列(见其注释)
+            sx, sy = self.window.client_to_screen(70, (b - t) // 2)
             pyautogui.click(sx, sy)
             time.sleep(0.2)
             pyautogui.press("home")
@@ -170,8 +219,9 @@ class InputController:
             l, t, r, b = self.window.client_rect_screen()
             self.window.bring_to_front()
             time.sleep(0.2)
-            # 取题目内容区中部一点
-            sx, sy = self.window.client_to_screen(400, (b - t) // 2)
+            # moveTo 到安全空白列 x=70(同 arrow_down 注释):悬停在选项文本上
+            # 的 hover 高亮会污染选中检测的蓝像素统计
+            sx, sy = self.window.client_to_screen(70, (b - t) // 2)
             pyautogui.moveTo(sx, sy)
             time.sleep(0.15)
             step = 1 if clicks >= 0 else -1
@@ -180,9 +230,25 @@ class InputController:
                 time.sleep(0.12)
             logger.info(f"已滚动 {clicks} 格")
 
+    def select_all(self):
+        """全选当前焦点控件内容(粘贴前调用,覆盖旧文本,保证重试幂等:
+        重复粘贴不会追加出双份答案)"""
+        if self.dry_run:
+            logger.info("[dry-run] 跳过 Ctrl+A")
+            return
+        pyautogui.hotkey("ctrl", "a")
+
     def type_text(self, text: str):
-        """输入文本(填空题预留)"""
+        """向当前焦点控件逐字符键入文本(填空题/简答题)。
+        学习通 JS 层禁用了粘贴(onpaste 拦截),Ctrl+V 剪贴板方案无效;
+        pyautogui.typewrite 只支持 ASCII。故用 SendInput KEYEVENTF_UNICODE
+        逐字符发送——与真人中文输入法键入产生的事件一致(简答题本就必须
+        允许输入法作答,onpaste 拦截不了键盘键入)。"""
         if self.dry_run:
             logger.info(f"[dry-run] 跳过输入: {text[:20]}")
             return
-        pyautogui.typewrite(text, interval=0.05)
+        with self._cursor_guard():
+            for ch in text:
+                _send_unicode_key(ch)
+                time.sleep(random.uniform(0.03, 0.08))   # 拟人打字节奏
+            logger.info(f"已键入文本({len(text)}字): {text[:30]}...")

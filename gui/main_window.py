@@ -336,7 +336,8 @@ class MainWindow(QMainWindow):
 
     def on_worker_event(self, kind: str, data: dict):
         if kind == "question":
-            type_names = {"single": "单选题", "multiple": "多选题", "judge": "判断题"}
+            type_names = {"single": "单选题", "multiple": "多选题", "judge": "判断题",
+                          "fill": "填空题", "short_answer": "简答题"}
             self.lbl_type.setText(type_names.get(data["qtype"], data["qtype"]))
             self.lbl_stem.setText(data["stem"] or "(空)")
             opts = data.get("options") or {}

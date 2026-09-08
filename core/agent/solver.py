@@ -15,15 +15,18 @@ from core.vision.locator import Question
 
 logger = get_logger("agent.solver")
 
-SYSTEM_PROMPT = """你是一个答题助手。根据题目和选项选出正确答案。
+SYSTEM_PROMPT = """你是一个答题助手。根据题目作答。
 
 必须严格遵守:
 1. 只输出一个 JSON 对象,不要输出任何其他内容(不要markdown代码块标记)。
 2. 单选题格式: {"answer": "A"}
 3. 多选题格式: {"answer": ["A", "B"]}(选项按字母顺序)
 4. 判断题格式: {"answer": "对"} 或 {"answer": "错"}
-5. answer 中的选项字母必须是大写,且必须是题目中实际存在的选项。
-6. 如果完全无法确定,选择你认为最可能的一个,不要留空。"""
+5. 填空题格式: {"answer": ["第一空的答案", "第二空的答案"]}(数组长度必须等于空的数量,按题面顺序)
+6. 简答题格式: {"answer": "回答的完整文本"}
+7. 单选/多选 answer 中的选项字母必须是大写,且必须是题目中实际存在的选项。
+8. 填空/简答的 answer 直接给最终答案文本,不要解释过程,不要加引号包裹。
+9. 如果完全无法确定,也要给出你认为最可能的答案,不要留空。"""
 
 
 class AnswerParseError(Exception):
@@ -73,11 +76,15 @@ class Solver:
         if raw is None:
             raise AnswerParseError(f"JSON 无 answer 字段: {data}")
 
+        if question.qtype in ("fill", "short_answer"):
+            return self._parse_text_answer(raw, question)
+
         # 归一化为标签列表
         if isinstance(raw, str):
             raw = raw.strip()
             # "AC" -> ["A","C"]; "A" -> ["A"]; "对"/"错" 保持
-            if question.qtype != "judge" and len(raw) > 1 and all(c in "ABCDEF" for c in raw.upper()):
+            if question.qtype in ("single", "multiple") and len(raw) > 1 \
+                    and all(c in "ABCDEF" for c in raw.upper()):
                 labels = list(raw.upper())
             else:
                 labels = [raw]
@@ -111,6 +118,34 @@ class Solver:
                 seen.add(v)
                 result.append(v)
         return result
+
+    @staticmethod
+    def _parse_text_answer(raw, question: Question) -> list[str]:
+        """填空/简答题答案解析:直接返回文本列表,不校验选项。
+        - 填空:每个空一个字符串,数量必须与识别到的输入框一致(不一致触发
+          重试,让模型按正确数量重新作答;仍失败则该题跳过,避免错位填写)
+        - 简答:整段回答文本(单元素列表,保持 solve() 接口统一)"""
+        if question.qtype == "short_answer":
+            if isinstance(raw, str) and raw.strip():
+                return [raw.strip()]
+            if isinstance(raw, list) and len(raw) == 1 and str(raw[0]).strip():
+                return [str(raw[0]).strip()]
+            raise AnswerParseError(f"简答题答案须为非空文本: {str(raw)[:80]!r}")
+        # 填空题
+        if isinstance(raw, str):
+            items = [raw.strip()]
+        elif isinstance(raw, list):
+            items = [str(x).strip() for x in raw]
+        else:
+            raise AnswerParseError(f"answer 类型非法: {type(raw)}")
+        items = [x for x in items if x]
+        n_blanks = len(question.blanks)
+        if n_blanks and len(items) != n_blanks:
+            raise AnswerParseError(
+                f"填空题答案数量({len(items)})与空位数({n_blanks})不符")
+        if not items:
+            raise AnswerParseError("填空题答案为空")
+        return items
 
     @staticmethod
     def _extract_json(reply: str) -> dict:
