@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""日志模块:同时输出到控制台、文件、GUI 回调"""
+"""日志模块:同时输出到控制台、文件、GUI 回1调"""
 import logging
 import sys
 from datetime import datetime
