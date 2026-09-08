@@ -3,6 +3,7 @@
   "option_indent": 30,
   "option_max_offset_x": 250,
   "option_line_gap": 35,
+  "option_row_gap": 49,
   "stem_option_gap": 110,
   "bottom_margin": 60,
   "option_labels": ["A", "B", "C", "D", "E", "F"],

@@ -91,6 +91,7 @@ class Executor:
         logger.info("===== 开始执行 =====")
         try:
             self.window.ensure_connected()
+            self.input.set_home()   # 记录鼠标起始位置,每个动作后复位到此
             self._loop()
         except StopRequested:
             logger.info("已停止")
@@ -98,6 +99,7 @@ class Executor:
             logger.exception(f"执行异常终止: {e}")
             self.emit(ExecutorEvent("error", {"message": str(e)}))
         finally:
+            self.input.restore_home()   # 结束后把鼠标还给用户
             summary = f"共完成 {self.done_count} 题,失败 {self.fail_count} 题"
             logger.info(f"===== 结束:{summary} =====")
             self.emit(ExecutorEvent("done", {"summary": summary}))
@@ -269,7 +271,8 @@ class Executor:
 
     def _click_with_verify(self, q: Question, labels: list[str]) -> bool:
         """点击选项并用选中状态检测验证(选项前圆圈选中后变蓝色)。
-        注意:学习通选项为切换式,重复点击会反选,因此永不补点;
+        注意:学习通选项为切换式,重复点击会反选,因此补点仅限
+        "检出目标未选中"的情形,避免对已选中目标重复点击造成反选;
         点击前先检测,已选中的目标选项跳过,已选中的非目标选项点击取消(纠正遗留)。"""
         centers = q.option_centers
         num = q.number if q.number is not None else q.key[:12]
@@ -293,30 +296,60 @@ class Executor:
         self.input.move_away()
         time.sleep(0.3)
 
-        # 复查:点击可能引起页面自动滚动(尤其点近视口底部的选项),
-        # 先重新定位该题拿最新坐标,再检测选中状态;未选中只告警(不补点,防反选)
-        for attempt in range(2):
-            unselected = self._verify_unselected(q, labels)
+        # 复查并纠正:点击可能引起页面自动滚动(尤其点近视口底部的选项),
+        # 每轮以题干锚点位移计算滚动偏移,把选项按原布局整体平移后检测
+        # 选中状态(见 _fresh_centers 注释:重新解析的选项坐标不可靠)。
+        # 首轮发现误选或漏选时主动纠正:先取消误选的非目标选项,再补点
+        # 仍未选中的目标;纠正后再次复查确认。题目滚出视口时绝不补点——
+        # 旧坐标会点到别的选项,把已选对的答案改成错的。
+        for attempt in range(3):
+            img = self.window.screenshot()
+            centers = self._fresh_centers(q, img)
+            if centers is None:
+                logger.info(f"题目{num} 复查时题目已滚出视口,视为已作答(原点击应已生效)")
+                return True
+            unselected = [l for l in labels
+                          if l in centers and not self._is_selected(img, *centers[l])]
             if not unselected:
                 return True
-            time.sleep(0.8)
-        logger.warning(f"题目{num} 选项 {unselected} 点击后未检出选中(已禁止补点防反选),请人工检查")
+            if attempt == 0:
+                wrong = [l for l in centers
+                         if l not in labels and self._is_selected(img, *centers[l])]
+                if wrong:
+                    logger.info(f"题目{num} 检出误选选项 {wrong},点击取消")
+                    self.input.click_options(centers, wrong)
+                    time.sleep(self.cfg["action"].get("verify_wait", 0.6))
+                logger.info(f"题目{num} 选项 {unselected} 未检出选中,补点")
+                self.input.click_options(centers, unselected)
+                time.sleep(self.cfg["action"].get("verify_wait", 0.6))
+            else:
+                time.sleep(0.8)   # 等待选中状态渲染后再复查
+        logger.warning(f"题目{num} 选项 {unselected} 点击后未检出选中,请人工检查")
         return False
 
-    def _verify_unselected(self, q: Question, labels: list[str]) -> list[str]:
-        """重新截图定位题目(坐标可能因页面自动滚动而偏移),返回未选中的选项"""
-        img = self.window.screenshot()
-        centers = dict(q.option_centers)
+    def _fresh_centers(self, q: Question, img) -> dict[str, tuple[int, int]] | None:
+        """重新定位题目,返回平移后的最新选项坐标;定位失败或滚出视口返回 None。
+        偏移量以题干锚点(整块大文本,识别可靠)的 y 位移计算,选项按原布局
+        整体平移——不复用重新解析出的选项坐标:小字符选项(单个数字/字母圈)
+        在整页 OCR 下大量漏检,选项-标签对应关系不可靠,实测把 A 错位到
+        下两行,补点会把已选对的答案改成错的。"""
         try:
             blocks = self.ocr.run(img)
             for qq in self.locator.locate_all(blocks, img.size[1]):
-                if qq.key == q.key and qq.option_centers:
-                    centers.update(qq.option_centers)
-                    break
+                if qq.key != q.key:
+                    continue
+                delta = qq.anchor_y2 - q.anchor_y2
+                h = img.size[1]
+                # 边界余量 30px:选项圆圈高约 31px,部分露出视口时选中检测
+                # 不可靠(假阴性会触发补点反选已选对的选项),宁可视为已作答
+                if any(not (30 < y + delta < h - 30)
+                       for (_x, y) in q.option_centers.values()):
+                    return None   # 题目(部分)滚出视口,坐标不可用
+                return {label: (x, y + delta)
+                        for label, (x, y) in q.option_centers.items()}
         except Exception as e:
-            logger.debug(f"复查时重新定位题目失败,沿用原坐标: {e}")
-        return [l for l in labels
-                if l in centers and not self._is_selected(img, *centers[l])]
+            logger.debug(f"复查时重新定位题目失败: {e}")
+        return None
 
     def _is_selected(self, img, cx: int, cy: int) -> bool:
         """检测选项是否为选中态。

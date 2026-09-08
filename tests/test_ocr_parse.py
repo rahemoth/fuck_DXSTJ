@@ -283,6 +283,44 @@ def test_first_letter_block_missed_still_complete():
     assert q.is_answerable
 
 
+def test_first_option_row_missed_not_backfilled():
+    """OCR 漏检首选项整行(A 的字母圈与文本都丢,2026-09 实测"2+2="题,
+    0.55 阈值下只检出 B/6、C/8、10 三块):末行文本必须顺延给 D,
+    绝不能回填给空缺的 A——那会凑成连续的 [A,B,C] 骗过完整性校验,
+    导致执行器跳过题干在上的题先答后题,且点击坐标落到末行(错选)。"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("2. (单选题)2+2=", 435, 656),
+        ("B", 450, 786), ("6", 486, 786),
+        ("C", 450, 835), ("8", 486, 835),
+        ("10", 486, 883),                      # D 的文本(字母圈漏检)
+    ])
+    questions = locator.locate_all(blocks, page_height=1000)
+    assert len(questions) == 1
+    q = questions[0]
+    assert q.options == {"B": "6", "C": "8", "D": "10"}
+    assert not q.complete
+    assert "不连续" in q.incomplete_reason
+    assert not q.is_answerable
+
+
+def test_only_tail_text_row_left_not_backfilled():
+    """极端形态:首行漏检且只剩最后一个无字母文本行(实测 run 早期只检出
+    B/6、10):'10' 与 B 相距约两行距,仍不得回填 A,应顺延给 B 之后,
+    标签不连续触发拦截(放大重识别/滚动)而非错误作答"""
+    locator = QuestionLocator()
+    blocks = make_blocks([
+        ("2. (单选题)2+2=", 435, 656),
+        ("B", 450, 786), ("6", 486, 786),
+        ("10", 486, 883),
+    ])
+    questions = locator.locate_all(blocks, page_height=1000)
+    q = questions[0]
+    assert q.options == {"B": "6", "C": "10"}
+    assert not q.complete
+    assert not q.is_answerable
+
+
 def test_middle_letter_block_missed_labels_correct():
     """OCR 漏检中间字母圈(如 B):B 的文本应补位到 B,而非覆盖 A"""
     locator = QuestionLocator()

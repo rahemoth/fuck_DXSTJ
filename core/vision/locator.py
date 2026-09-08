@@ -250,6 +250,7 @@ class QuestionLocator:
                 first_opt_y1 = y1 if first_opt_y1 is None else first_opt_y1
                 last_opt_y2 = y2
                 prev_opt_y, prev_label = y1, label
+                next_auto = self._advance_auto_label(labels, next_auto, label)
             elif not text_blocks:
                 continue
             elif (m2 := _OPTION_RE.match(line_text)) and m2.group(1).upper() in labels:
@@ -261,6 +262,7 @@ class QuestionLocator:
                     first_opt_y1 = line[0].box[1] if first_opt_y1 is None else first_opt_y1
                     last_opt_y2 = line[0].box[3]
                     prev_opt_y, prev_label = line[0].box[1], label
+                    next_auto = self._advance_auto_label(labels, next_auto, label)
             elif self.option_indent <= first_dx <= self.option_max_dx:
                 # 形态3:无字母缩进行
                 y1, y2 = line[0].box[1], line[-1].box[3]
@@ -270,7 +272,9 @@ class QuestionLocator:
                     last_opt_y2 = y2
                 elif next_auto < len(labels):
                     # 跳过已被字母圈识别占用的标签(OCR 漏检中间字母圈时,
-                    # 该行文本应补到缺失字母,而非覆盖已有选项)
+                    # 该行文本应补到缺失字母,而非覆盖已有选项)。
+                    # next_auto 已随每个已识别字母标签推进(_advance_auto_label),
+                    # 只会向后顺延、绝不回填上方空缺的标签
                     while next_auto < len(labels) and labels[next_auto] in q.options:
                         next_auto += 1
                     if next_auto >= len(labels):
@@ -301,8 +305,43 @@ class QuestionLocator:
         reason = self._check_complete(
             sorted(q.options.keys()), first_opt_y1, last_opt_y2, stem_bottom, page_height
         )
+        if reason is None:
+            reason = self._check_row_gaps(q)
         q.complete = reason is None
         q.incomplete_reason = reason or ""
+
+    def _advance_auto_label(self, labels: list[str], next_auto: int, label: str) -> int:
+        """某行被字母圈/字母前缀确认为标签 X 后,后续无字母行的自动标签
+        必须推进到 X 之后:页面自上而下 A→B→C...,下方的行不可能属于上方
+        空缺的标签。实测 bug:首选项 A 整行漏检(B/C 字母圈正常、D 只剩
+        文本行)时,D 的文本被回填给空缺的 A,标签恰好凑成连续的
+        [A,B,C]骗过完整性校验——执行器跳过题干在上的题先答后题,
+        且点击坐标落在末行(错选)。
+        注意只在标签序前进时推进:无字母行已在上方补位(如首行字母圈
+        漏检但文本行还在)时 next_auto 已越过该标签,不回退。"""
+        if label in labels:
+            return max(next_auto, labels.index(label) + 1)
+        return next_auto
+
+    def _check_row_gaps(self, q: Question) -> str | None:
+        """短选项行距均匀性校验。选项全为短文本(≤3字,不可能换行)时,
+        相邻选项行距应基本一致;某段行距明显偏大说明中间整行被 OCR 漏检,
+        此时按 y 序自动赋的标签已错位(实测单字符数字行漏检后 A 被错位
+        两行,补点把已选对的答案改成错的),须触发选项区放大重识别
+        (executor 的 zoom 路径)找回漏检行。"""
+        if len(q.option_centers) < 2:
+            return None
+        if any(len(t.strip()) > 3 for t in q.options.values()):
+            return None   # 存在长选项(可能换行),行距本身允许不均匀
+        ys = sorted(y for _x, y in q.option_centers.values())
+        gaps = [b - a for a, b in zip(ys, ys[1:])]
+        # 参考行距:多个行距时取最小值(正常行距),并与配置下限结合,
+        # 避免个别页字体偏大(实际行距>配置值)时误报
+        row_gap = self.roi.get("option_row_gap", 49)
+        ref = max(min(gaps), row_gap * 0.8) if len(gaps) >= 2 else row_gap
+        if any(g > ref * 1.6 for g in gaps):
+            return f"选项行距异常,疑似整行漏检(gaps={gaps})"
+        return None
 
     def _check_complete(self, opt_labels: list[str], first_opt_y1, last_opt_y2,
                         stem_bottom, page_height: int | None) -> str | None:

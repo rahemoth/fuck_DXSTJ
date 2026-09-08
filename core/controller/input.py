@@ -7,6 +7,7 @@
 """
 import random
 import time
+from contextlib import contextmanager
 
 import pyautogui
 
@@ -24,6 +25,53 @@ class InputController:
         self.window = window
         self.cfg = action_cfg
         self.dry_run = action_cfg.get("dry_run", True)
+        self._home: tuple[int, int] | None = None   # 鼠标复位点(执行开始时的位置)
+        self._in_action = False                     # 嵌套动作标记(仅最外层复位)
+
+    # ---------- 鼠标复位 ----------
+
+    def set_home(self):
+        """记录当前鼠标位置,作为每个动作结束后的复位点(执行开始时调用一次)"""
+        try:
+            self._home = pyautogui.position()
+        except Exception:
+            self._home = None
+
+    def restore_home(self):
+        """立即把鼠标复位到 set_home 记录的位置"""
+        if self.dry_run or self._home is None:
+            return
+        try:
+            pyautogui.moveTo(self._home)
+        except Exception as e:
+            logger.debug(f"鼠标复位失败(可忽略): {e}")
+
+    @contextmanager
+    def _cursor_guard(self):
+        """动作期间借用鼠标,结束后复位(嵌套调用仅最外层复位)。
+        复位优先回到 set_home() 记录的起始位置;未记录则回到本次动作前的位置;
+        dry-run 不移动鼠标,直接透传。"""
+        if self.dry_run or self._in_action:
+            yield
+            return
+        self._in_action = True
+        try:
+            target = self._home
+            if target is None:
+                try:
+                    target = pyautogui.position()
+                except Exception:
+                    target = None
+            try:
+                yield
+            finally:
+                if target is not None:
+                    try:
+                        pyautogui.moveTo(target)
+                    except Exception as e:
+                        logger.debug(f"鼠标复位失败(可忽略): {e}")
+        finally:
+            self._in_action = False
 
     @staticmethod
     def _sleep(range_s: list | tuple):
@@ -45,27 +93,30 @@ class InputController:
         """点击客户区坐标(x, y 为截图坐标系)"""
         if delay:
             self._sleep(self.cfg.get("click_delay", [0.8, 1.8]))
-        sx, sy = self.window.client_to_screen(int(x), int(y))
-        self._click_screen(sx, sy, label)
+        with self._cursor_guard():
+            sx, sy = self.window.client_to_screen(int(x), int(y))
+            self._click_screen(sx, sy, label)
 
     def click_options(self, option_centers: dict[str, tuple[int, int]], labels: list[str]):
         """依次点击多个选项(多选题)。labels 形如 ["A", "C"]"""
-        for i, label in enumerate(labels):
-            if label not in option_centers:
-                logger.warning(f"选项 {label} 无坐标,跳过")
-                continue
-            if i > 0:
-                self._sleep(self.cfg.get("option_interval", [0.3, 0.6]))
-            x, y = option_centers[label]
-            self.click_client(x, y, label=f"选项{label}", delay=False)
+        with self._cursor_guard():
+            for i, label in enumerate(labels):
+                if label not in option_centers:
+                    logger.warning(f"选项 {label} 无坐标,跳过")
+                    continue
+                if i > 0:
+                    self._sleep(self.cfg.get("option_interval", [0.3, 0.6]))
+                x, y = option_centers[label]
+                self.click_client(x, y, label=f"选项{label}", delay=False)
 
     def move_away(self):
-        """把鼠标移到客户区左上角,避免悬停高亮干扰点击后的截图验证"""
+        """把鼠标移到客户区左上角,避免悬停高亮干扰点击后的截图验证。
+        复位由下一个动作的 _cursor_guard 完成(截图前需保持移开状态)。"""
         if self.dry_run:
             return
         try:
             sx, sy = self.window.client_to_screen(5, 5)
-            pyautogui.moveTo(sx, sy, duration=0.2)
+            pyautogui.moveTo(sx, sy)
         except Exception as e:
             logger.debug(f"移开鼠标失败(可忽略): {e}")
 
@@ -79,17 +130,18 @@ class InputController:
         if self.dry_run:
             logger.info(f"[dry-run] 跳过 ↓×{times}")
             return
-        self.window.bring_to_front()
-        time.sleep(0.1)
-        l, t, r, b = self.window.client_rect_screen()
-        # 内容区左边距空白列(左侧导航 x<100, 题目内容 x>160, 120 为安全空白)
-        sx, sy = self.window.client_to_screen(120, (b - t) // 2)
-        pyautogui.click(sx, sy)
-        time.sleep(0.15)
-        for _ in range(times):
-            pyautogui.press("down")
-            time.sleep(0.04)
-        logger.info(f"已按 ↓×{times}")
+        with self._cursor_guard():
+            self.window.bring_to_front()
+            time.sleep(0.1)
+            l, t, r, b = self.window.client_rect_screen()
+            # 内容区左边距空白列(左侧导航 x<100, 题目内容 x>160, 120 为安全空白)
+            sx, sy = self.window.client_to_screen(120, (b - t) // 2)
+            pyautogui.click(sx, sy)
+            time.sleep(0.15)
+            for _ in range(times):
+                pyautogui.press("down")
+                time.sleep(0.04)
+            logger.info(f"已按 ↓×{times}")
 
     def press_home(self):
         """回到页面顶部(复查漏答题用)。
@@ -97,14 +149,15 @@ class InputController:
         if self.dry_run:
             logger.info("[dry-run] 跳过 Home")
             return
-        self.window.bring_to_front()
-        time.sleep(0.15)
-        l, t, r, b = self.window.client_rect_screen()
-        sx, sy = self.window.client_to_screen(120, (b - t) // 2)
-        pyautogui.click(sx, sy)
-        time.sleep(0.2)
-        pyautogui.press("home")
-        logger.info("已按 Home 回到顶部")
+        with self._cursor_guard():
+            self.window.bring_to_front()
+            time.sleep(0.15)
+            l, t, r, b = self.window.client_rect_screen()
+            sx, sy = self.window.client_to_screen(120, (b - t) // 2)
+            pyautogui.click(sx, sy)
+            time.sleep(0.2)
+            pyautogui.press("home")
+            logger.info("已按 Home 回到顶部")
 
     def scroll(self, clicks: int):
         """滚动滚轮。clicks>0 向下,clicks<0 向上。
@@ -113,18 +166,19 @@ class InputController:
         if self.dry_run:
             logger.info(f"[dry-run] 跳过滚动 {clicks} 格")
             return
-        l, t, r, b = self.window.client_rect_screen()
-        self.window.bring_to_front()
-        time.sleep(0.2)
-        # 取题目内容区中部一点
-        sx, sy = self.window.client_to_screen(400, (b - t) // 2)
-        pyautogui.moveTo(sx, sy)
-        time.sleep(0.15)
-        step = 1 if clicks >= 0 else -1
-        for _ in range(abs(int(clicks))):
-            pyautogui.scroll(-step)          # pyautogui: 负数 = 向下
-            time.sleep(0.12)
-        logger.info(f"已滚动 {clicks} 格")
+        with self._cursor_guard():
+            l, t, r, b = self.window.client_rect_screen()
+            self.window.bring_to_front()
+            time.sleep(0.2)
+            # 取题目内容区中部一点
+            sx, sy = self.window.client_to_screen(400, (b - t) // 2)
+            pyautogui.moveTo(sx, sy)
+            time.sleep(0.15)
+            step = 1 if clicks >= 0 else -1
+            for _ in range(abs(int(clicks))):
+                pyautogui.scroll(-step)          # pyautogui: 负数 = 向下
+                time.sleep(0.12)
+            logger.info(f"已滚动 {clicks} 格")
 
     def type_text(self, text: str):
         """输入文本(填空题预留)"""
