@@ -8,16 +8,215 @@
 线程模型:GUI 主线程 + Worker(QThread),Executor 事件经信号转发回 GUI。
 """
 from PySide6.QtCore import Qt, QThread, Signal, QObject
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
-    QLabel, QPlainTextEdit, QGroupBox, QFormLayout, QMessageBox, QApplication,
+    QLabel, QPlainTextEdit, QGroupBox, QFormLayout, QMessageBox,
     QDialog, QTreeWidget, QTreeWidgetItem, QDialogButtonBox, QComboBox,
+    QGraphicsDropShadowEffect, QSizeGrip,
 )
 
 from core.config import Config
 from core.log import setup_logging, set_gui_callback, get_logger
 from core.pipeline.executor import Executor, ExecutorEvent
 from gui.config_dialog import ConfigDialog
+
+# ---- iOS 26 液态玻璃(Liquid Glass)色板 ----
+_INK = "#1d1d1f"          # 主文字
+_GRAY = "#6e6e73"         # 次级文字
+_BLUE = "#0071e3"         # 苹果蓝
+_GREEN = "#34c759"        # 状态绿
+_ORANGE = "#ff9500"       # 状态橙
+_RED = "#ff3b30"          # 状态红
+
+# 玻璃材质配方(QSS rgba 第4参为 0-255 不透明度):
+#   亮玻璃  rgba(255,255,255,~150)  + 白色高光描边 → 卡片/导航/输入
+#   灰玻璃  白底掺灰 + 深色细描边       → 次级按钮/下拉
+#   蓝玻璃  蓝色纵向渐变 + 白高光描边   → 主按钮
+#   暗玻璃  rgba(28,28,30,~216)      → 日志控制台
+_MAIN_QSS = f"""
+* {{
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+                 "Segoe UI", sans-serif;
+}}
+
+/* ---- 底板:近乎全透(仅 2% 白)承接鼠标,亚克力模糊壁纸由 DWM 层透出 ---- */
+QMainWindow, QWidget#central, QWidget#body {{ background: rgba(255, 255, 255, 5); }}
+QSizeGrip {{
+    background: rgba(255, 255, 255, 150);
+    border: 1px solid rgba(0, 0, 0, 18);
+    border-radius: 7px; width: 20px; height: 20px;
+}}
+QSizeGrip:hover {{ background: rgba(255, 255, 255, 210); }}
+QLabel {{ color: {_INK}; font-size: 13px; background: transparent; border: none; }}
+
+/* ---- 顶部导航:磨砂玻璃条 ---- */
+QWidget#navbar {{
+    background: rgba(255, 255, 255, 172);
+    border-bottom: 1px solid rgba(0, 0, 0, 40);
+}}
+
+/* ---- 按钮:液态玻璃胶囊(顶边高光=镜面反射) ---- */
+QPushButton {{
+    border: 1px solid rgba(255, 255, 255, 165);
+    border-top: 1px solid rgba(255, 255, 255, 245);
+    border-radius: 980px; padding: 8px 22px;
+    font-size: 13px; font-weight: 600; color: {_INK};
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                 stop:0 rgba(255, 255, 255, 250), stop:1 rgba(255, 255, 255, 150));
+}}
+QPushButton:hover {{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                 stop:0 rgba(255, 255, 255, 255), stop:1 rgba(255, 255, 255, 188));
+}}
+QPushButton:pressed {{ background: rgba(255, 255, 255, 135); }}
+QPushButton:disabled {{ color: rgba(29, 29, 31, 105); background: rgba(255, 255, 255, 75); }}
+
+QPushButton#primary {{
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 120);
+    border-top: 1px solid rgba(255, 255, 255, 205);
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                 stop:0 rgba(120, 190, 255, 228), stop:1 rgba(0, 113, 227, 232));
+}}
+QPushButton#primary:hover {{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                 stop:0 rgba(140, 205, 255, 240), stop:1 rgba(0, 126, 255, 242));
+}}
+QPushButton#primary:pressed {{ background: rgba(0, 113, 227, 222); }}
+QPushButton#primary:disabled {{ background: rgba(0, 113, 227, 100); }}
+
+QPushButton#secondary {{
+    color: {_INK};
+    border: 1px solid rgba(0, 0, 0, 26);
+    border-top: 1px solid rgba(255, 255, 255, 225);
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                 stop:0 rgba(255, 255, 255, 228), stop:1 rgba(226, 228, 234, 150));
+}}
+QPushButton#secondary:hover {{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                 stop:0 rgba(255, 255, 255, 245), stop:1 rgba(226, 228, 234, 185));
+}}
+QPushButton#secondary:disabled {{ color: #a1a1a6; background: rgba(255, 255, 255, 70); }}
+
+QPushButton#ghost {{ color: {_BLUE}; background: transparent; border: none; }}
+QPushButton#ghost:hover {{ background: rgba(255, 255, 255, 115); }}
+QPushButton#ghost:pressed {{ background: rgba(255, 255, 255, 75); }}
+QPushButton#ghost:disabled {{ color: #a1a1a6; }}
+
+/* 无边框窗口的最小化/关闭小按钮 */
+QPushButton#winBtn, QPushButton#closeBtn {{
+    color: {_GRAY}; background: transparent; border: none;
+    border-radius: 980px; padding: 6px 12px;
+}}
+QPushButton#winBtn:hover {{ color: {_INK}; background: rgba(255, 255, 255, 130); }}
+QPushButton#closeBtn:hover {{ color: #ffffff; background: rgba(255, 59, 48, 225); }}
+
+/* ---- 下拉框:玻璃胶囊 ---- */
+QComboBox {{
+    background: rgba(255, 255, 255, 205);
+    border: 1px solid rgba(0, 0, 0, 26);
+    border-top: 1px solid rgba(255, 255, 255, 230);
+    border-radius: 980px; padding: 6px 14px; min-height: 20px;
+    color: {_INK}; font-size: 13px;
+}}
+QComboBox:focus {{ border: 1.5px solid {_BLUE}; }}
+QComboBox::drop-down {{ border: none; width: 26px; }}
+QComboBox QAbstractItemView {{
+    background: rgba(255, 255, 255, 248);
+    border: 1px solid rgba(0, 0, 0, 22);
+    border-radius: 14px; padding: 4px; color: {_INK};
+    selection-background-color: #dbeafe; selection-color: {_INK};
+}}
+
+/* ---- 玻璃卡片(悬浮投影在代码中附加) ----
+   液态玻璃边缘结构:顶部纯白高光棱 + 侧底淡岩灰暗缘,衬托出厚度感 */
+QGroupBox#card {{
+    background: rgba(255, 255, 255, 105);
+    border: 1px solid rgba(110, 124, 148, 48);
+    border-top: 2px solid #ffffff;
+    border-radius: 26px;
+    padding: 18px 22px 16px 22px; font-size: 15px; font-weight: 600;
+}}
+QGroupBox#card::title {{
+    subcontrol-origin: margin; subcontrol-position: top left;
+    left: 22px; top: 12px; padding: 0; color: {_INK};
+}}
+
+/* ---- 暗玻璃日志控制台 ---- */
+QPlainTextEdit#log {{
+    background: rgba(28, 28, 30, 208);
+    color: #e8e8ed;
+    font-family: "Cascadia Code", "Consolas", monospace; font-size: 12px;
+    border: 1px solid rgba(255, 255, 255, 34);
+    border-radius: 20px; padding: 14px 16px;
+    selection-background-color: #3a3a3e;
+}}
+"""
+
+
+def _enable_acrylic(hwnd: int, tint_rgb: tuple = (238, 243, 240),
+                    tint_alpha: int = 140) -> bool:
+    """给窗口启用 Windows 亚克力模糊:窗口区域由 DWM 渲染模糊后的
+    桌面壁纸,窗口像素按 alpha 与之混合 → 真正"透过 UI 看到模糊壁纸"。
+    优先 ACCENT_ENABLE_ACRYLICBLURBEHIND(4),不支持则回退
+    ACCENT_ENABLE_BLURBEHIND(3)。失败返回 False(窗口退化为纯透明)。"""
+    import ctypes
+
+    class ACCENT_POLICY(ctypes.Structure):
+        _fields_ = [("AccentState", ctypes.c_uint), ("AccentFlags", ctypes.c_uint),
+                    ("GradientColor", ctypes.c_uint), ("AnimationId", ctypes.c_uint)]
+
+    class WCA_DATA(ctypes.Structure):
+        _fields_ = [("Attribute", ctypes.c_int),
+                    ("Data", ctypes.POINTER(ACCENT_POLICY)),
+                    ("SizeOfData", ctypes.c_int)]
+
+    r, g, b = tint_rgb
+    gradient = (tint_alpha << 24) | (b << 16) | (g << 8) | r  # AABBGGRB
+    for state in (4, 3):
+        accent = ACCENT_POLICY(state, 0, gradient, 0)
+        data = WCA_DATA(19, ctypes.pointer(accent), ctypes.sizeof(accent))  # 19=WCA_ACCENT_POLICY
+        if ctypes.windll.user32.SetWindowCompositionAttribute(hwnd, ctypes.byref(data)):
+            return True
+    return False
+
+
+class _NavBar(QWidget):
+    """无边框窗口的标题栏替身:按住空白处拖动窗口,双击最大化/还原。
+    必须设 WA_StyledBackground 让 QSS 背景真正绘制——分层透明窗口中
+    未绘制像素(alpha=0)不参与命中测试,点击会穿透到桌面,拖不动。"""
+
+    def __init__(self):
+        super().__init__()
+        self.setObjectName("navbar")
+        self.setAttribute(Qt.WA_StyledBackground, True)
+        self._drag_pos = None
+
+    def mousePressEvent(self, e):
+        if e.button() == Qt.LeftButton and not self.window().isMaximized():
+            # 优先系统原生移动(支持 Win11 贴边分屏),失败退回手动 move
+            handle = self.window().windowHandle()
+            if handle is not None and handle.startSystemMove():
+                e.accept()
+                return
+            self._drag_pos = (e.globalPosition().toPoint()
+                              - self.window().frameGeometry().topLeft())
+            e.accept()
+
+    def mouseMoveEvent(self, e):
+        if self._drag_pos is not None and e.buttons() & Qt.LeftButton:
+            self.window().move(e.globalPosition().toPoint() - self._drag_pos)
+            e.accept()
+
+    def mouseReleaseEvent(self, e):
+        self._drag_pos = None
+        e.accept()
+
+    def mouseDoubleClickEvent(self, e):
+        w = self.window()
+        w.showNormal() if w.isMaximized() else w.showMaximized()
+        e.accept()
 
 
 class LogBridge(QObject):
@@ -64,7 +263,36 @@ class EnvDetectDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("环境检测")
         self.resize(760, 480)
+        self.setStyleSheet(f"""
+        QDialog {{
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                         stop:0 #e9edf5, stop:0.5 #e1e9f3, stop:1 #ebeef4);
+        }}
+        QLabel {{ color: {_INK}; font-size: 13px; }}
+        QTreeWidget {{
+            background: rgba(255, 255, 255, 200);
+            border: 1px solid rgba(255, 255, 255, 210);
+            border-radius: 16px; padding: 6px; font-size: 13px; color: {_INK};
+        }}
+        QTreeWidget::item {{ padding: 5px 2px; border-radius: 6px; }}
+        QTreeWidget::item:selected {{ background: #dbeafe; color: {_INK}; }}
+        QHeaderView::section {{
+            background: transparent; border: none;
+            border-bottom: 1px solid rgba(0, 0, 0, 25); padding: 6px 8px;
+            color: {_GRAY}; font-size: 12px; font-weight: 600;
+        }}
+        QPushButton {{
+            border: 1px solid rgba(255, 255, 255, 150);
+            border-radius: 980px; padding: 7px 20px;
+            font-size: 13px; font-weight: 600; color: {_INK};
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                         stop:0 rgba(255, 255, 255, 220), stop:1 rgba(255, 255, 255, 135));
+        }}
+        QPushButton#ghost {{ color: {_BLUE}; background: transparent; border: none; }}
+        QPushButton#ghost:hover {{ background: rgba(255, 255, 255, 105); }}
+        """)
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 18, 20, 18)
 
         self.tree = QTreeWidget()
         self.tree.setHeaderLabels(["名称", "版本 / 来源", "路径"])
@@ -87,6 +315,8 @@ class EnvDetectDialog(QDialog):
         layout.addWidget(self.tree)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Close)
+        for b in buttons.buttons():
+            b.setObjectName("ghost")
         buttons.rejected.connect(self.reject)
         buttons.clicked.connect(self.accept)
         layout.addWidget(buttons)
@@ -128,7 +358,12 @@ class MainWindow(QMainWindow):
         self.logger = get_logger("gui")
 
         self.setWindowTitle("fuck_DXSTJ - 学习通自动做题")
-        self.resize(860, 640)
+        self.resize(900, 680)
+        # 无边框 + 全窗口透明:背景由 DWM 亚克力层渲染模糊壁纸(见 showEvent)
+        self.setWindowFlags(self.windowFlags() | Qt.FramelessWindowHint)
+        self.setAttribute(Qt.WA_TranslucentBackground)
+        self._acrylic_on = False
+        self.setStyleSheet(_MAIN_QSS)
         self.worker: Worker | None = None
 
         self._build_ui()
@@ -137,15 +372,28 @@ class MainWindow(QMainWindow):
         self._log_bridge.log_signal.connect(self.log_view.appendPlainText)
         set_gui_callback(self._log_bridge.log_signal.emit)
 
+    def showEvent(self, e):
+        super().showEvent(e)
+        if not self._acrylic_on:
+            self._acrylic_on = _enable_acrylic(int(self.winId()))
+            if not self._acrylic_on:
+                self.logger.warning("亚克力模糊不可用,窗口将半透明无模糊")
+
     # ---------- UI 构建 ----------
 
     def _build_ui(self):
         central = QWidget()
+        central.setObjectName("central")
         self.setCentralWidget(central)
         root = QVBoxLayout(central)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
 
-        # 顶部控制栏
-        top = QHBoxLayout()
+        # ---- 顶部导航:可拖动标题栏(空白处按住拖动,双击最大化) ----
+        navbar = _NavBar()
+        top = QHBoxLayout(navbar)
+        top.setContentsMargins(20, 12, 20, 12)
+        top.setSpacing(12)
         self.mode_combo = QComboBox()
         self.mode_combo.addItem("客户端(OCR)")
         self.mode_combo.addItem("网页版(浏览器)")
@@ -157,64 +405,115 @@ class MainWindow(QMainWindow):
             "主程序只负责调模型给答案(iframe 兼容性最好)")
         top.addWidget(self.mode_combo)
         self.status_label = QLabel("● 未连接")
-        self.status_label.setStyleSheet("color: gray; font-weight: bold;")
+        self.status_label.setStyleSheet(
+            f"color: {_GRAY}; font-weight: 600;")
         top.addWidget(self.status_label)
         top.addStretch()
 
         self.btn_connect = QPushButton("测试连接")
+        self.btn_connect.setObjectName("ghost")
         self.btn_connect.clicked.connect(self.on_connect)
         top.addWidget(self.btn_connect)
 
-        self.btn_start = QPushButton("开始")
-        self.btn_start.setStyleSheet("font-weight: bold;")
-        self.btn_start.clicked.connect(self.on_start)
-        top.addWidget(self.btn_start)
+        self.btn_env = QPushButton("环境检测")
+        self.btn_env.setObjectName("ghost")
+        self.btn_env.clicked.connect(self.on_env_detect)
+        top.addWidget(self.btn_env)
+
+        self.btn_config = QPushButton("设置")
+        self.btn_config.setObjectName("ghost")
+        self.btn_config.clicked.connect(self.on_config)
+        top.addWidget(self.btn_config)
 
         self.btn_stop = QPushButton("停止")
+        self.btn_stop.setObjectName("secondary")
         self.btn_stop.setEnabled(False)
         self.btn_stop.clicked.connect(self.on_stop)
         top.addWidget(self.btn_stop)
 
-        self.btn_config = QPushButton("设置")
-        self.btn_config.clicked.connect(self.on_config)
-        top.addWidget(self.btn_config)
+        self.btn_start = QPushButton("开始")
+        self.btn_start.setObjectName("primary")
+        self.btn_start.clicked.connect(self.on_start)
+        top.addWidget(self.btn_start)
 
-        self.btn_env = QPushButton("环境检测")
-        self.btn_env.clicked.connect(self.on_env_detect)
-        top.addWidget(self.btn_env)
-        root.addLayout(top)
+        # 无边框窗口自带的窗口控制:最小化 / 关闭
+        self.btn_min = QPushButton("─")
+        self.btn_min.setObjectName("winBtn")
+        self.btn_min.setToolTip("最小化")
+        self.btn_min.clicked.connect(self.showMinimized)
+        top.addWidget(self.btn_min)
+        self.btn_close = QPushButton("✕")
+        self.btn_close.setObjectName("closeBtn")
+        self.btn_close.setToolTip("关闭")
+        self.btn_close.clicked.connect(self.close)
+        top.addWidget(self.btn_close)
+        root.addWidget(navbar)
 
-        # 中部:题目预览 + 统计
+        # ---- 内容区 ----
+        body = QWidget()
+        body.setObjectName("body")
+        # 分层透明窗口:未绘制像素点击穿透,必须绘制底色承接鼠标
+        body.setAttribute(Qt.WA_StyledBackground, True)
+        body_v = QVBoxLayout(body)
+        body_v.setContentsMargins(20, 24, 20, 18)
+        body_v.setSpacing(16)
+
+        # 题目预览卡片
         preview_box = QGroupBox("当前题目 / 答案预览")
+        preview_box.setObjectName("card")
+        preview_box.setGraphicsEffect(self._glass_shadow(blu=56, alpha=82))
         preview_form = QFormLayout(preview_box)
+        preview_form.setContentsMargins(0, 26, 0, 4)
+        preview_form.setSpacing(8)
         self.lbl_type = QLabel("-")
         self.lbl_stem = QLabel("-")
         self.lbl_stem.setWordWrap(True)
         self.lbl_options = QLabel("-")
         self.lbl_options.setWordWrap(True)
         self.lbl_answer = QLabel("-")
-        self.lbl_answer.setStyleSheet("font-weight: bold; color: #0a6;")
-        preview_form.addRow("题型:", self.lbl_type)
-        preview_form.addRow("题干:", self.lbl_stem)
-        preview_form.addRow("选项:", self.lbl_options)
-        preview_form.addRow("模型答案:", self.lbl_answer)
-        root.addWidget(preview_box)
+        self.lbl_answer.setWordWrap(True)
+        self.lbl_answer.setStyleSheet(
+            f"font-weight: 600; color: {_GREEN};")
+        preview_form.addRow("题型", self.lbl_type)
+        preview_form.addRow("题干", self.lbl_stem)
+        preview_form.addRow("选项", self.lbl_options)
+        preview_form.addRow("模型答案", self.lbl_answer)
+        body_v.addWidget(preview_box)
 
         # 统计行
         stat = QHBoxLayout()
         self.lbl_stat = QLabel("完成 0 题 / 失败 0 题")
+        self.lbl_stat.setStyleSheet(f"color: {_GRAY};")
         stat.addWidget(self.lbl_stat)
         stat.addStretch()
-        root.addLayout(stat)
+        body_v.addLayout(stat)
 
-        # 底部:日志
-        log_box = QGroupBox("日志")
-        log_layout = QVBoxLayout(log_box)
+        # 日志控制台(深色圆角块,苹果官网代码区风格)
+        log_title = QLabel("日志")
+        log_title.setStyleSheet(
+            f"color: {_GRAY}; font-size: 12px; font-weight: 600;")
+        body_v.addWidget(log_title)
         self.log_view = QPlainTextEdit()
+        self.log_view.setObjectName("log")
         self.log_view.setReadOnly(True)
         self.log_view.setMaximumBlockCount(2000)
-        log_layout.addWidget(self.log_view)
-        root.addWidget(log_box, stretch=1)
+        self.log_view.setGraphicsEffect(self._glass_shadow(blu=44, alpha=64))
+        body_v.addWidget(self.log_view, stretch=1)
+
+        # 右下角拖拽缩放(无边框窗口没有系统缩放边)
+        grip = QSizeGrip(self)
+        body_v.addWidget(grip, 0, Qt.AlignBottom | Qt.AlignRight)
+
+        root.addWidget(body, stretch=1)
+
+    @staticmethod
+    def _glass_shadow(blu: int = 44, alpha: int = 58):
+        """液态玻璃悬浮投影:大半径、向下小偏移、带冷色调"""
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(blu)
+        shadow.setOffset(0, 12)
+        shadow.setColor(QColor(31, 41, 59, alpha))
+        return shadow
 
     # ---------- 按钮事件 ----------
 
@@ -230,15 +529,18 @@ class MainWindow(QMainWindow):
             try:
                 img = win.screenshot()
                 self.status_label.setText("● 已连接")
-                self.status_label.setStyleSheet("color: green; font-weight: bold;")
+                self.status_label.setStyleSheet(
+                    f"color: {_GREEN}; font-weight: 600;")
                 self.logger.info(f"连接成功,截图尺寸 {img.size}")
             except Exception as e:
                 self.status_label.setText("● 窗口已找到,但截图失败")
-                self.status_label.setStyleSheet("color: orange; font-weight: bold;")
+                self.status_label.setStyleSheet(
+                    f"color: {_ORANGE}; font-weight: 600;")
                 self.logger.error(f"截图失败: {e}")
         else:
             self.status_label.setText("● 未找到学习通窗口")
-            self.status_label.setStyleSheet("color: red; font-weight: bold;")
+            self.status_label.setStyleSheet(
+                f"color: {_RED}; font-weight: 600;")
             self.logger.warning("未找到学习通窗口,请打开学习通PC客户端后重试")
 
     def on_config(self):
@@ -267,11 +569,13 @@ class MainWindow(QMainWindow):
         self.btn_connect.setText("测试连接")
         if ok:
             self.status_label.setText("● 已连接(网页版)")
-            self.status_label.setStyleSheet("color: green; font-weight: bold;")
+            self.status_label.setStyleSheet(
+                f"color: {_GREEN}; font-weight: 600;")
             self.logger.info(f"网页版连接测试通过: {msg}")
         else:
             self.status_label.setText("● 网页版未就绪")
-            self.status_label.setStyleSheet("color: orange; font-weight: bold;")
+            self.status_label.setStyleSheet(
+                f"color: {_ORANGE}; font-weight: 600;")
             self.logger.warning(f"网页版连接测试失败: {msg}")
 
     # ---------- 环境检测 ----------

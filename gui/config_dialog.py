@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 """设置对话框:API 配置、行为参数。
-模型支持从服务端拉取列表选择(下拉框,亦可手输);测试连接显示往返延迟。"""
+模型支持从服务端拉取列表选择(下拉框,亦可手输);测试连接显示往返延迟。
+iOS 26 液态玻璃风格:渐变底板、半透明玻璃输入、玻璃胶囊按钮。"""
 import threading
 
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Qt, Signal
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QFormLayout, QLineEdit, QCheckBox,
-    QDialogButtonBox, QLabel, QComboBox, QSpinBox, QHBoxLayout,
+    QLabel, QComboBox, QSpinBox, QHBoxLayout,
     QPushButton, QMessageBox,
 )
 
@@ -14,6 +15,113 @@ from core.agent.llm import LLMClient
 from core.log import get_logger
 
 logger = get_logger("gui.config")
+
+# iOS 26 液态玻璃(Liquid Glass)色板
+_INK = "#1d1d1f"          # 主文字
+_GRAY = "#6e6e73"         # 次级文字 / 小节标题
+_BLUE = "#0071e3"         # 苹果蓝(主按钮/链接)
+
+_DIALOG_QSS = f"""
+* {{
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC",
+                 "Segoe UI", sans-serif;
+}}
+
+/* ---- 底板:蓝→薰衣草渐变"壁纸" ---- */
+QDialog {{
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                 stop:0 #eceff7, stop:0.5 #dee6f2, stop:1 #edeef5);
+}}
+QLabel {{ color: {_INK}; font-size: 13px; background: transparent; border: none; }}
+
+/* ---- 输入控件:玻璃 ---- */
+QLineEdit, QSpinBox, QComboBox {{
+    background: rgba(255, 255, 255, 205);
+    border: 1px solid rgba(0, 0, 0, 26);
+    border-top: 1px solid rgba(255, 255, 255, 235);
+    border-radius: 12px; padding: 6px 10px; min-height: 20px;
+    color: {_INK}; font-size: 13px;
+}}
+QLineEdit:focus, QSpinBox:focus, QComboBox:focus {{ border: 1.5px solid {_BLUE}; }}
+QLineEdit:disabled, QSpinBox:disabled, QComboBox:disabled {{ color: #a1a1a6; }}
+QSpinBox::up-button, QSpinBox::down-button {{
+    background: transparent; border: none; width: 18px;
+}}
+QComboBox::drop-down {{ border: none; width: 26px; }}
+QComboBox QAbstractItemView {{
+    background: rgba(255, 255, 255, 245);
+    border: 1px solid rgba(0, 0, 0, 20);
+    border-radius: 14px; padding: 4px; color: {_INK};
+    selection-background-color: #eaf3fe; selection-color: {_INK};
+}}
+
+/* ---- 复选框:玻璃圆角块,选中注入蓝色 ---- */
+QCheckBox {{ color: {_INK}; font-size: 13px; spacing: 8px; background: transparent; }}
+QCheckBox::indicator {{
+    width: 20px; height: 20px;
+    border: 1px solid rgba(0, 0, 0, 32);
+    border-radius: 7px; background: rgba(255, 255, 255, 195);
+}}
+QCheckBox::indicator:checked {{
+    border-color: rgba(0, 113, 227, 200);
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                 stop:0 #4da2ff, stop:1 #0071e3);
+    image: url(none);
+}}
+QCheckBox::indicator:disabled {{ background: rgba(255, 255, 255, 90); }}
+
+/* ---- 按钮:液态玻璃胶囊(顶边高光) ---- */
+QPushButton {{
+    border: 1px solid rgba(255, 255, 255, 165);
+    border-top: 1px solid rgba(255, 255, 255, 245);
+    border-radius: 980px; padding: 8px 22px;
+    font-size: 13px; font-weight: 600; color: {_INK};
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                 stop:0 rgba(255, 255, 255, 250), stop:1 rgba(255, 255, 255, 150));
+}}
+QPushButton:hover {{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                 stop:0 rgba(255, 255, 255, 255), stop:1 rgba(255, 255, 255, 188));
+}}
+QPushButton:pressed {{ background: rgba(255, 255, 255, 135); }}
+QPushButton#ghost {{ color: {_BLUE}; background: transparent; border: none; }}
+QPushButton#ghost:hover {{ background: rgba(255, 255, 255, 115); }}
+QPushButton#ghost:disabled {{ color: #a1a1a6; }}
+QPushButton#primary {{
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 120);
+    border-top: 1px solid rgba(255, 255, 255, 205);
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                 stop:0 rgba(120, 190, 255, 228), stop:1 rgba(0, 113, 227, 232));
+}}
+QPushButton#primary:hover {{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                 stop:0 rgba(140, 205, 255, 240), stop:1 rgba(0, 126, 255, 242));
+}}
+QPushButton#primary:pressed {{ background: rgba(0, 113, 227, 222); }}
+QPushButton#primary:disabled {{ background: rgba(0, 113, 227, 100); }}
+QPushButton#secondary {{
+    color: {_INK};
+    border: 1px solid rgba(0, 0, 0, 26);
+    border-top: 1px solid rgba(255, 255, 255, 225);
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                 stop:0 rgba(255, 255, 255, 228), stop:1 rgba(226, 228, 234, 150));
+}}
+QPushButton#secondary:hover {{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                 stop:0 rgba(255, 255, 255, 245), stop:1 rgba(226, 228, 234, 185));
+}}
+QPushButton#secondary:disabled {{ color: #a1a1a6; background: rgba(255, 255, 255, 70); }}
+"""
+
+
+def _section(text: str) -> QLabel:
+    """苹果式小节标题:灰色小字加粗,上下留白"""
+    lbl = QLabel(text)
+    lbl.setStyleSheet(
+        f"color: {_GRAY}; font-size: 12px; font-weight: 600; "
+        "background: transparent; border: none; padding: 0;")
+    return lbl
 
 
 class _TaskBridge(QObject):
@@ -27,16 +135,21 @@ class ConfigDialog(QDialog):
         super().__init__(parent)
         self.cfg = cfg
         self.setWindowTitle("设置")
-        self.setMinimumWidth(520)
+        self.setMinimumWidth(540)
+        self.setStyleSheet(_DIALOG_QSS)
 
         self._bridge = _TaskBridge()
         self._bridge.finished.connect(self._on_task_finished)
 
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(28, 26, 28, 26)
+        layout.setSpacing(14)
         form = QFormLayout()
+        form.setSpacing(10)
+        form.setLabelAlignment(Qt.AlignRight)
 
         # ---- LLM 配置 ----
-        form.addRow(QLabel("—— 模型 API(OpenAI 兼容)——"))
+        form.addRow(_section("模型 API · OpenAI 兼容"))
         self.base_url = QLineEdit(cfg["llm"]["base_url"])
         self.base_url.setPlaceholderText("https://api.deepseek.com/v1")
         form.addRow("Base URL", self.base_url)
@@ -50,11 +163,14 @@ class ConfigDialog(QDialog):
         self.model.setEditable(True)
         self.model.setCurrentText(cfg["llm"]["model"])
         model_row = QHBoxLayout()
+        model_row.setSpacing(8)
         model_row.addWidget(self.model, stretch=1)
         self.btn_models = QPushButton("获取模型列表")
+        self.btn_models.setObjectName("ghost")
         self.btn_models.clicked.connect(self.on_fetch_models)
         model_row.addWidget(self.btn_models)
         self.btn_ping = QPushButton("测试连接")
+        self.btn_ping.setObjectName("ghost")
         self.btn_ping.clicked.connect(self.on_test_connection)
         model_row.addWidget(self.btn_ping)
         form.addRow("模型", model_row)
@@ -64,31 +180,22 @@ class ConfigDialog(QDialog):
         form.addRow("", self.net_status)
 
         # ---- 行为配置 ----
-        form.addRow(QLabel("—— 行为 ——"))
+        form.addRow(_section("行为"))
         self.dry_run = QCheckBox("dry-run 模式(只识别和请求答案,不实际点击)")
         self.dry_run.setChecked(cfg["action"]["dry_run"])
         form.addRow("", self.dry_run)
 
-        self.scroll_steps = QSpinBox()
-        self.scroll_steps.setRange(1, 20)
-        self.scroll_steps.setValue(int(cfg["action"].get("fine_scroll_steps", 3)))
-        self.scroll_steps.setToolTip("方向键↓每次滚动按几下。约50px/次,次数越多单次滚动幅度越大")
-        form.addRow("每次滚动按↓次数", self.scroll_steps)
-
         self.click_delay = self._range_spin(cfg["action"]["click_delay"])
         form.addRow("点击延时(秒,随机区间)", self.click_delay)
 
-        self.next_delay = self._range_spin(cfg["action"]["next_delay"])
-        form.addRow("翻页延时(秒,随机区间)", self.next_delay)
-
         # ---- 窗口配置 ----
-        form.addRow(QLabel("—— 窗口 ——"))
+        form.addRow(_section("窗口"))
         self.title_keywords = QLineEdit(",".join(cfg["window"]["title_keywords"]))
         self.title_keywords.setPlaceholderText("学习通")
         form.addRow("窗口标题关键词(逗号分隔)", self.title_keywords)
 
         # ---- 网页版配置 ----
-        form.addRow(QLabel("—— 网页版 ——"))
+        form.addRow(_section("网页版"))
         self.default_browser = QComboBox()
         self.default_browser.addItem("(未选择)", "")
         self.default_browser.addItem("Edge", "edge")
@@ -115,11 +222,21 @@ class ConfigDialog(QDialog):
         form.addRow("", self.launch_browser)
 
         layout.addLayout(form)
+        layout.addStretch()
 
-        buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
+        # 底部按钮:取消(灰) + 保存(苹果蓝胶囊)
+        buttons = QHBoxLayout()
+        buttons.addStretch()
+        self.btn_cancel = QPushButton("取消")
+        self.btn_cancel.setObjectName("secondary")
+        self.btn_cancel.clicked.connect(self.reject)
+        buttons.addWidget(self.btn_cancel)
+        self.btn_save = QPushButton("保存")
+        self.btn_save.setObjectName("primary")
+        self.btn_save.setDefault(True)
+        self.btn_save.clicked.connect(self.accept)
+        buttons.addWidget(self.btn_save)
+        layout.addLayout(buttons)
 
     # ---------- 网络任务(后台线程) ----------
 
@@ -152,7 +269,7 @@ class ConfigDialog(QDialog):
         if not self._check_llm_inputs():
             return
         self.net_status.setText("正在获取模型列表...")
-        self.net_status.setStyleSheet("color: gray;")
+        self.net_status.setStyleSheet(f"color: {_GRAY};")
         self._run_task("models", lambda: LLMClient(self._llm_cfg()).list_models())
 
     def on_test_connection(self):
@@ -160,7 +277,7 @@ class ConfigDialog(QDialog):
         if not self._check_llm_inputs():
             return
         self.net_status.setText("正在测试连接...")
-        self.net_status.setStyleSheet("color: gray;")
+        self.net_status.setStyleSheet(f"color: {_GRAY};")
         self._run_task("ping", lambda: LLMClient(self._llm_cfg()).ping())
 
     def _check_llm_inputs(self) -> bool:
@@ -181,7 +298,7 @@ class ConfigDialog(QDialog):
         if task == "models":
             if not ok:
                 self.net_status.setText(f"获取失败: {payload}")
-                self.net_status.setStyleSheet("color: red;")
+                self.net_status.setStyleSheet("color: #ff3b30;")
                 return
             current = self.model.currentText()
             self.model.clear()
@@ -189,16 +306,16 @@ class ConfigDialog(QDialog):
             if current in payload:
                 self.model.setCurrentText(current)
             self.net_status.setText(f"获取到 {len(payload)} 个模型")
-            self.net_status.setStyleSheet("color: green;")
+            self.net_status.setStyleSheet("color: #34c759;")
         else:  # ping
             if not ok:
                 self.net_status.setText(f"连接失败: {payload}")
-                self.net_status.setStyleSheet("color: red;")
+                self.net_status.setStyleSheet("color: #ff3b30;")
                 return
             elapsed, reply = payload
             self.net_status.setText(
                 f"连接成功,延迟 {elapsed * 1000:.0f} ms,模型回复: {reply[:30]}")
-            self.net_status.setStyleSheet("color: green;")
+            self.net_status.setStyleSheet("color: #34c759;")
 
     # ---------- 收集 ----------
 
@@ -230,9 +347,7 @@ class ConfigDialog(QDialog):
             },
             "action": {
                 "dry_run": self.dry_run.isChecked(),
-                "fine_scroll_steps": self.scroll_steps.value(),
                 "click_delay": self._parse_range(self.click_delay, self.cfg["action"]["click_delay"]),
-                "next_delay": self._parse_range(self.next_delay, self.cfg["action"]["next_delay"]),
             },
             "window": {
                 "title_keywords": keywords or ["学习通"],

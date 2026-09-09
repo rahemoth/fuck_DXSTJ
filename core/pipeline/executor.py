@@ -8,9 +8,11 @@
 
 运行在工作线程中(GUI 通过信号接收事件),支持随时停止。
 """
+import copy
 import re
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 
 import numpy as np
@@ -21,6 +23,7 @@ from core.agent.solver import Solver
 from core.controller.input import InputController
 from core.controller.window import WindowCapture
 from core.log import get_logger
+from core.pipeline.scanner import PageScanner
 from core.vision.locator import QuestionLocator, Question
 from core.vision.ocr import OcrEngine
 
@@ -66,6 +69,7 @@ class Executor:
         self.input = InputController(self.window, cfg["action"])
         self.llm = LLMClient(cfg["llm"])
         self.solver = Solver(self.llm, max_retries=cfg["llm"].get("max_retries", 1))
+        self.scanner = None                 # 批量模式整页扫描器(懒建)
 
         # 统计与状态
         self.done_count = 0
@@ -97,7 +101,8 @@ class Executor:
         try:
             self.window.ensure_connected()
             self.input.set_home()   # 记录鼠标起始位置,每个动作后复位到此
-            self._loop()
+            if not self._run_batch():
+                self._loop()
         except StopRequested:
             logger.info("已停止")
         except Exception as e:
@@ -108,6 +113,211 @@ class Executor:
             summary = f"共完成 {self.done_count} 题,失败 {self.fail_count} 题"
             logger.info(f"===== 结束:{summary} =====")
             self.emit(ExecutorEvent("done", {"summary": summary}))
+
+    # ---------- 批量模式:整页扫描 → 并发求解 → 定位滚动作答 ----------
+
+    def _run_batch(self) -> bool:
+        """整页长图扫描批量模式。滚动条不可用/单题翻页页/扫描异常返回
+        False(调用方回退旧的逐题循环)。"""
+        self.scanner = PageScanner(self.window, self.ocr, self.locator,
+                                  self.input, self.cfg,
+                                  check_stop=self._check_stop)
+        try:
+            scan = self.scanner.scan()
+        except Exception as e:
+            logger.warning(f"整页扫描异常({e}),回退逐题模式")
+            return False
+        if scan is None:
+            return False
+        # 单题翻页页(考试):可见"下一题"按钮,逐题翻页流程更合适
+        if self.locator.find_next_button(scan.blocks) is not None:
+            logger.info("检测到'下一题'按钮(单题翻页页),回退逐题模式")
+            return False
+
+        self._heal_incomplete(scan)
+        questions = scan.questions
+        if not questions:
+            logger.warning("整页扫描未解析出题目,回退逐题模式")
+            return False
+
+        # 并发求解(按页面顺序作答,LLM 调用并发取回)
+        answers = self._solve_all(questions)
+
+        for q in questions:
+            self._check_stop()
+            if q.key in self._done_keys:
+                continue
+            answer = answers.get(q.key)
+            num = q.number if q.number is not None else "(题号未识别)"
+            if not q.is_answerable:
+                logger.info(f"题目{num} 信息不完整({q.incomplete_reason}),跳过")
+                self._failed_keys.add(q.key)
+                self.fail_count = len(self._failed_keys)
+                continue
+            if answer is None:
+                logger.error(f"题目{num} 获取答案失败,跳过")
+                self._failed_keys.add(q.key)
+                self.fail_count = len(self._failed_keys)
+                continue
+            self.emit(ExecutorEvent("question", {
+                "qtype": q.qtype, "stem": q.stem, "options": q.options,
+            }))
+            logger.info(f"题目{num} 答案: {answer}")
+            self.emit(ExecutorEvent("answer", {"answer": answer}))
+            ok = self._answer_in_scan(q, answer, scan)
+            if ok:
+                self._done_keys.add(q.key)
+                self.done_count = len(self._done_keys)
+            else:
+                self._failed_keys.add(q.key)
+                self.fail_count = len(self._failed_keys)
+        logger.info("批量作答完毕。如需提交,请在学习通中手动点击提交按钮")
+        return True
+
+    def _heal_incomplete(self, scan):
+        """对长图上选项不完整的题目做选项区放大重识别(复用 zoom 机制)"""
+        for _round in range(2):
+            incomplete = [q for q in scan.questions
+                          if q.stem and not q.complete and q.anchor_y2 > 0]
+            if not incomplete:
+                break
+            healed = False
+            for q in incomplete:
+                zoomed = self._ocr_zoom_band(scan.long_img, scan.blocks, q,
+                                              page_height=scan.max_offset + 200)
+                if zoomed is None:
+                    continue
+                new_blocks, new_questions = zoomed
+                new_q = next((nq for nq in new_questions if nq.key == q.key), None)
+                if new_q is not None and new_q.complete:
+                    logger.info(f"题目{q.number} 放大重识别后完整"
+                                f"(选项={dict(new_q.options)})")
+                    scan.blocks, scan.questions = new_blocks, new_questions
+                    healed = True
+                    break           # blocks 已整体替换,重取 incomplete 列表
+            if not healed:
+                break
+
+    def _solve_all(self, questions: list[Question]) -> dict[str, object]:
+        """并发调用 LLM 求解全部题目,返回 {题干key: 答案}。
+        单题异常记 None(作答阶段按失败计)。"""
+        workers = int(self.cfg["llm"].get("concurrency", 1))
+        answers: dict[str, object] = {}
+
+        def solve_one(q: Question):
+            self._check_stop()
+            return self.solver.solve(q)
+
+        if workers <= 1:
+            for q in questions:
+                try:
+                    answers[q.key] = solve_one(q)
+                except StopRequested:
+                    raise
+                except Exception as e:
+                    logger.error(f"题目{q.number} 求解失败: {e}")
+                    answers[q.key] = None
+            return answers
+
+        ex = ThreadPoolExecutor(max_workers=workers)
+        try:
+            futs = {ex.submit(solve_one, q): q for q in questions}
+            for fut in as_completed(futs):
+                q = futs[fut]
+                try:
+                    answers[q.key] = fut.result()
+                except StopRequested:
+                    raise
+                except Exception as e:
+                    logger.error(f"题目{q.number} 求解失败: {e}")
+                    answers[q.key] = None
+        finally:
+            # 停止时不等待在途 LLM 调用(各有硬超时兜底,线程自会退出)
+            ex.shutdown(wait=False, cancel_futures=True)
+        return answers
+
+    def _answer_in_scan(self, q: Question, answer, scan) -> bool:
+        """把长图坐标的题目滚进视口并作答。视口容不下的超高题按
+        选项/输入框分块滚动作答。"""
+        h = scan.viewport_h
+        if q.qtype == "fill":
+            ys = [b["center"][1] for b in q.blanks]
+            if not ys:
+                return False
+            if max(ys) - min(ys) <= h - 200:
+                offset = scan.scroll_to(q.blanks[0]["center"][1] - h // 3)
+                if offset < 0:
+                    return False
+                return self._execute_answer(self._to_viewport(q, offset), answer)
+            ok = True
+            for i, blank in enumerate(q.blanks):
+                if i >= len(answer):
+                    break
+                offset = scan.scroll_to(blank["center"][1] - h // 2)
+                if offset < 0:
+                    ok = False
+                    continue
+                one = copy.deepcopy(q)
+                one.blanks = [self._shift_blank(blank, offset)]
+                if not self._execute_answer(one, [answer[i]]):
+                    ok = False
+            return ok
+        if q.qtype == "short_answer":
+            if q.editor_center is None:
+                return False
+            offset = scan.scroll_to(q.editor_center[1] - h // 3)
+            if offset < 0:
+                return False
+            return self._execute_answer(self._to_viewport(q, offset), answer)
+
+        # 选择/判断题
+        ys = [cy for _l, (_x, cy) in q.option_centers.items()]
+        if not ys:
+            return False
+        if max(ys) - min(ys) <= h - 200:
+            offset = scan.scroll_to(min(ys) - h // 3)
+            if offset < 0:
+                return False
+            return self._execute_answer(self._to_viewport(q, offset), answer)
+        # 超高题:按选项分块滚动,逐块点击+验证(only 模式不触碰块外
+        # 选项,避免把其他块已答的选项取消)
+        labels = [l for l in answer if l in q.option_centers]
+        if self.input.dry_run:
+            self.input.click_options(q.option_centers, labels)
+            return True
+        ok = True
+        for label in labels:
+            offset = scan.scroll_to(q.option_centers[label][1] - h // 2)
+            if offset < 0:
+                ok = False
+                continue
+            vq = self._to_viewport(q, offset)
+            if not self._click_with_verify(vq, [label], only=True):
+                ok = False
+        return ok
+
+    def _to_viewport(self, q: Question, offset: int) -> Question:
+        """长图坐标 → 视口坐标的题目副本(点击/验证都基于当前视口)"""
+        vq = copy.deepcopy(q)
+
+        def ty(y: int) -> int:
+            return y - offset
+
+        vq.option_centers = {lb: (x, ty(y))
+                              for lb, (x, y) in vq.option_centers.items()}
+        vq.blanks = [self._shift_blank(b, offset) for b in vq.blanks]
+        if vq.editor_center is not None:
+            vq.editor_center = (vq.editor_center[0], ty(vq.editor_center[1]))
+        vq.anchor_y2 = ty(vq.anchor_y2)
+        vq.region_y2 = ty(vq.region_y2)
+        return vq
+
+    @staticmethod
+    def _shift_blank(blank: dict, offset: int) -> dict:
+        x1, y1, x2, y2 = blank["region"]
+        cx, cy = blank["center"]
+        return {"index": blank["index"], "center": (cx, cy - offset),
+                "region": (x1, y1 - offset, x2, y2 - offset)}
 
     def _loop(self):
         while not self._stop.is_set():
@@ -197,11 +407,13 @@ class Executor:
                 partial = q
         return target, partial
 
-    def _ocr_zoom_band(self, img, blocks, partial: Question):
+    def _ocr_zoom_band(self, img, blocks, partial: Question, page_height=None):
         """裁剪题目选项区(anchor_y2 ~ region_y2)放大3倍重识别。
         单字符选项(如"3"/"5"/字母圈)在整页OCR的检测阶段就漏检,
         放大后可检出。识别块坐标映射回客户区后与整页块合并重新解析。
-        返回 (新blocks, 新questions) 或 None(不适用的情形)。"""
+        返回 (新blocks, 新questions) 或 None(不适用的情形)。
+        :param page_height: 覆盖"贴近视口底部"检查用的高度
+            (整页长图扫描时传 长图高+余量:整页无截断)"""
         y1, y2 = partial.anchor_y2, partial.region_y2
         y2 = min(y2, y1 + 420)                 # 选项区不会超过一屏
         if y1 <= 0 or y2 - y1 < 40:
@@ -233,7 +445,7 @@ class Executor:
         # (实测Q6选项块被划给Q7,Q6仍空、Q7带着错误选项去作答)
         merged = [b for b in blocks if not (y1 <= (b.box[1] + b.box[3]) / 2 < y2)] + mapped
         merged.sort(key=lambda b: (b.box[1], b.box[0]))
-        questions = self.locator.locate_all(merged, img.size[1], img.size[0])
+        questions = self.locator.locate_all(merged, page_height or img.size[1], img.size[0])
         return merged, questions
 
     # ---------- 内部 ----------
@@ -262,17 +474,7 @@ class Executor:
         logger.info(f"题目{num} 答案: {answer}")
         self.emit(ExecutorEvent("answer", {"answer": answer}))
 
-        # 按题型分发执行(dry-run 下输入方法自身跳过,验证放行)
-        self._check_stop()
-        if q.qtype == "fill":
-            ok = self._fill_blanks(q, answer)
-        elif q.qtype == "short_answer":
-            ok = self._type_answer(q, answer)
-        elif self.input.dry_run:
-            self.input.click_options(q.option_centers, answer)
-            ok = True
-        else:
-            ok = self._click_with_verify(q, answer)
+        ok = self._execute_answer(q, answer)
         if ok:
             self._done_keys.add(q.key)
             self.done_count = len(self._done_keys)
@@ -284,6 +486,18 @@ class Executor:
 
         if next_btn is not None:
             self._click_next(next_btn)
+
+    def _execute_answer(self, q: Question, answer) -> bool:
+        """按题型分发执行答案动作(dry-run 下输入方法自身跳过,验证放行)"""
+        self._check_stop()
+        if q.qtype == "fill":
+            return self._fill_blanks(q, answer)
+        if q.qtype == "short_answer":
+            return self._type_answer(q, answer)
+        if self.input.dry_run:
+            self.input.click_options(q.option_centers, answer)
+            return True
+        return self._click_with_verify(q, answer)
 
     def _fill_blanks(self, q: Question, answers: list[str]) -> bool:
         """填空题:逐空 点击输入框 → Ctrl+A 全选 → 逐字符键入 → 区域 OCR 验证。
@@ -363,11 +577,14 @@ class Executor:
         blocks = sorted(blocks, key=lambda b: (b.box[1], b.box[0]))
         return "".join(b.text.strip() for b in blocks).strip()
 
-    def _click_with_verify(self, q: Question, labels: list[str]) -> bool:
+    def _click_with_verify(self, q: Question, labels: list[str],
+                           only: bool = False) -> bool:
         """点击选项并用选中状态检测验证(选项前圆圈选中后变蓝色)。
         注意:学习通选项为切换式,重复点击会反选,因此补点仅限
         "检出目标未选中"的情形,避免对已选中目标重复点击造成反选;
-        点击前先检测,已选中的目标选项跳过,已选中的非目标选项点击取消(纠正遗留)。"""
+        点击前先检测,已选中的目标选项跳过,已选中的非目标选项点击取消(纠正遗留)。
+        :param only: 超高题分块作答时只处理 labels 内的选项,
+            不对块外选项做取消纠正(后续块/已答选项不在本块)"""
         centers = q.option_centers
         num = q.number if q.number is not None else q.key[:12]
         pending = [l for l in labels if l in centers]
@@ -378,7 +595,8 @@ class Executor:
         if already:
             logger.info(f"题目{num} 选项 {already} 已处于选中状态,跳过点击")
             pending = [l for l in pending if l not in already]
-        to_deselect = [l for l in extras if self._is_selected(img, *centers[l])]
+        to_deselect = [] if only else \
+            [l for l in extras if self._is_selected(img, *centers[l])]
         if to_deselect:
             logger.info(f"题目{num} 非答案选项 {to_deselect} 已被选中,点击取消")
             self.input.click_options(centers, to_deselect)
@@ -409,7 +627,7 @@ class Executor:
             if attempt == 0:
                 wrong = [l for l in centers
                          if l not in labels and self._is_selected(img, *centers[l])]
-                if wrong:
+                if not only and wrong:
                     logger.info(f"题目{num} 检出误选选项 {wrong},点击取消")
                     self.input.click_options(centers, wrong)
                     time.sleep(self.cfg["action"].get("verify_wait", 0.6))

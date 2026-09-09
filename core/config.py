@@ -25,10 +25,7 @@ DEFAULT_CONFIG = {
     "action": {
         "dry_run": True,
         "click_delay": [0.8, 1.8],
-        "next_delay": [1.0, 2.0],
         "option_interval": [0.3, 0.6],
-        "scroll_clicks": 2,
-        "scroll_wait": 0.8,
     },
     "ocr": {
         "confidence_threshold": 0.55,

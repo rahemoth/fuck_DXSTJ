@@ -170,41 +170,46 @@ class InputController:
         """点击'下一题'后的等待"""
         self._sleep(self.cfg.get("next_delay", [1.0, 2.0]))
 
+    def _focus_content(self):
+        """点击内容区空白列建立键盘焦点(方向键/Home 作用于此前的
+        焦点元素,需先点空白处把焦点落到页面上)。
+        焦点点击列:导航图标 x≤53,内容列缩窗时从 x≈102 起(字母圈 114~127),
+        全屏时从 x≈435 起。x=70 在两种窗口宽度下都是空白,勿改回 120
+        (120 会压缩窗字母圈列,radio 下误点即切换已选答案)。"""
+        self.window.bring_to_front()
+        time.sleep(0.1)
+        l, t, r, b = self.window.client_rect_screen()
+        sx, sy = self.window.client_to_screen(70, (b - t) // 2)
+        pyautogui.click(sx, sy)
+        time.sleep(0.15)
+
     def arrow_down(self, times: int = 10):
         """按方向键↓滚动(导航与微滚统一入口)。
+        实测学习通每按一次精确滚 40px,线性可靠;滚动不改动答案,
+        dry-run 下也真实执行(整页扫描依赖)。
         每次仅滚几十像素,小步多滚不跳题;需先点击内容区空白处建立焦点。"""
-        if self.dry_run:
-            logger.info(f"[dry-run] 跳过 ↓×{times}")
-            return
         with self._cursor_guard():
-            self.window.bring_to_front()
-            time.sleep(0.1)
-            l, t, r, b = self.window.client_rect_screen()
-            # 焦点点击列:导航图标 x≤53,内容列缩窗时从 x≈102 起(字母圈 114~127),
-            # 全屏时从 x≈435 起。x=70 在两种窗口宽度下都是空白,勿改回 120
-            # (120 会压缩窗字母圈列,radio 下误点即切换已选答案)。
-            sx, sy = self.window.client_to_screen(70, (b - t) // 2)
-            pyautogui.click(sx, sy)
-            time.sleep(0.15)
+            self._focus_content()
             for _ in range(times):
                 pyautogui.press("down")
                 time.sleep(0.04)
             logger.info(f"已按 ↓×{times}")
 
+    def arrow_up(self, times: int = 10):
+        """按方向键↑滚动(批量作答阶段向上校正),同 arrow_down。"""
+        with self._cursor_guard():
+            self._focus_content()
+            for _ in range(times):
+                pyautogui.press("up")
+                time.sleep(0.04)
+            logger.info(f"已按 ↑×{times}")
+
     def press_home(self):
         """回到页面顶部(复查漏答题用)。
-        需先点击内容区空白处建立焦点,否则 Home 键可能不作用于页面。"""
-        if self.dry_run:
-            logger.info("[dry-run] 跳过 Home")
-            return
+        需先点击内容区空白处建立焦点,否则 Home 键可能不作用于页面。
+        滚动不改动答案,dry-run 下也真实执行(整页扫描依赖)。"""
         with self._cursor_guard():
-            self.window.bring_to_front()
-            time.sleep(0.15)
-            l, t, r, b = self.window.client_rect_screen()
-            # 同 arrow_down:x=70 是全屏/缩窗都安全的空白列(见其注释)
-            sx, sy = self.window.client_to_screen(70, (b - t) // 2)
-            pyautogui.click(sx, sy)
-            time.sleep(0.2)
+            self._focus_content()
             pyautogui.press("home")
             logger.info("已按 Home 回到顶部")
 
