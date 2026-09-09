@@ -6,6 +6,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from gui.main_window import MainWindow
+from gui.theme import apply_theme
 
 
 def main():
@@ -13,6 +14,7 @@ def main():
 
     app = QApplication(sys.argv)
     app.setApplicationName("fuck_DXSTJ - 学习通自动做题")
+    apply_theme(app)
     win = MainWindow()
     win.show()
     sys.exit(app.exec())

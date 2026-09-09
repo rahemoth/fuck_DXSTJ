@@ -52,3 +52,6 @@ web:                            # 网页版模式(GUI 顶部下拉切换)
 log:
   save_to_file: true
   dir: logs
+
+ui:                             # 界面主题
+  theme: dark                   # dark / light / auto(跟随系统)

@@ -1,19 +1,28 @@
 # -*- coding: utf-8 -*-
-"""设置对话框:API 配置、行为参数。
-模型支持从服务端拉取列表选择(下拉框,亦可手输);测试连接显示往返延迟。"""
+"""设置对话框(Fluent 版):API 配置、行为参数、外观主题。
+基于 MessageBoxBase(无边框 + 遮罩),表单按 SettingCardGroup 卡片分组,
+内容区用 SmoothScrollArea 承载。模型支持从服务端拉取列表;测试连接显示往返延迟。"""
 import threading
 
-from PySide6.QtCore import QObject, Signal
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QFormLayout, QLineEdit, QCheckBox,
-    QDialogButtonBox, QLabel, QComboBox, QSpinBox, QHBoxLayout,
-    QPushButton, QMessageBox,
+from PySide6.QtCore import QObject, Signal, Qt
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
+
+from qfluentwidgets import (
+    MessageBoxBase, SettingCardGroup, SettingCard, SwitchSettingCard,
+    BodyLabel, LineEdit, PasswordLineEdit, EditableComboBox, ComboBox,
+    SpinBox, PushButton, InfoBar, SmoothScrollArea,
+    FluentIcon as FIF, qconfig, setTheme, setThemeColor, Theme,
 )
 
 from core.agent.llm import LLMClient
+from core.config import Config
 from core.log import get_logger
+from gui import theme as gui_theme
 
 logger = get_logger("gui.config")
+
+# net_status 状态色:不硬编码,统一从 ark() 调色板按当前主题动态取色
+_STATUS_COLOR_KEYS = {"busy": "text_muted", "ok": "success", "err": "error"}
 
 
 class _TaskBridge(QObject):
@@ -22,104 +31,190 @@ class _TaskBridge(QObject):
     finished = Signal(str, bool, object)
 
 
-class ConfigDialog(QDialog):
+def _localize_switch(card: SwitchSettingCard):
+    """SwitchSettingCard 的开关文字默认是英文 Off/On,本地化为 关闭/开启"""
+    sb = card.switchButton
+    sb.setText("开启" if sb.isChecked() else "关闭")
+    sb.checkedChanged.connect(
+        lambda checked: sb.setText("开启" if checked else "关闭"))
+
+
+class ConfigDialog(MessageBoxBase):
     def __init__(self, cfg: dict, parent=None):
         super().__init__(parent)
         self.cfg = cfg
-        self.setWindowTitle("设置")
-        self.setMinimumWidth(520)
+
+        # 底部按钮:最小尺寸 + 按钮区内边距,防止文字截断
+        self.yesButton.setText("保存")
+        self.cancelButton.setText("取消")
+        self.yesButton.setMinimumSize(80, 36)
+        self.cancelButton.setMinimumSize(80, 36)
+        self.buttonLayout.setContentsMargins(20, 12, 20, 20)
+        self.widget.setMinimumWidth(640)
 
         self._bridge = _TaskBridge()
         self._bridge.finished.connect(self._on_task_finished)
 
-        layout = QVBoxLayout(self)
-        form = QFormLayout()
+        # 记录 net_status 当前级别;主题切换时按 ark() 重新取色应用
+        self._net_status_level = "busy"
+        qconfig.themeChangedFinished.connect(self._reapply_status_color)
 
-        # ---- LLM 配置 ----
-        form.addRow(QLabel("—— 模型 API(OpenAI 兼容)——"))
-        self.base_url = QLineEdit(cfg["llm"]["base_url"])
+        scroll = SmoothScrollArea(self.widget)
+        scroll.setWidgetResizable(True)
+        scroll.setMinimumHeight(420)
+        content = QWidget()
+        # ScrollArea 的 viewport / content 默认白底,必须设 transparent 让父容器
+        # (MessageBoxBase 的 widget 已经跟随主题)透出来;否则深色模式下仍然一片白
+        content.setObjectName("configScrollContent")
+        scroll.viewport().setObjectName("configScrollViewport")
+        scroll.setStyleSheet(
+            "QScrollArea { background: transparent; border: none; }"
+            "QScrollArea > QWidget > QWidget { background: transparent; }"
+            "QScrollArea::viewport { background: transparent; }"
+        )
+        scroll.setWidget(content)
+        vbox = QVBoxLayout(content)
+        vbox.setContentsMargins(4, 4, 12, 4)
+        vbox.setSpacing(12)
+
+        # ---- 分组 1:模型 API ----
+        g1 = SettingCardGroup("模型 API(OpenAI 兼容)", content)
+        self.base_url = LineEdit()
+        self.base_url.setText(cfg["llm"]["base_url"])
         self.base_url.setPlaceholderText("https://api.deepseek.com/v1")
-        form.addRow("Base URL", self.base_url)
+        self.base_url.setMinimumWidth(280)
+        self._add_card(g1, FIF.LINK, "Base URL", "OpenAI 兼容接口地址", self.base_url)
 
-        self.api_key = QLineEdit(cfg["llm"]["api_key"])
-        self.api_key.setEchoMode(QLineEdit.Password)
-        form.addRow("API Key", self.api_key)
+        self.api_key = PasswordLineEdit()
+        self.api_key.setText(cfg["llm"]["api_key"])
+        self.api_key.setMinimumWidth(280)
+        self._add_card(g1, FIF.CERTIFICATE, "API Key", "密钥仅保存在本地 config.yaml", self.api_key)
 
-        # 模型:可编辑下拉框 + 获取列表按钮
-        self.model = QComboBox()
-        self.model.setEditable(True)
-        self.model.setCurrentText(cfg["llm"]["model"])
-        model_row = QHBoxLayout()
-        model_row.addWidget(self.model, stretch=1)
-        self.btn_models = QPushButton("获取模型列表")
+        self.model = EditableComboBox()
+        self.model.setText(cfg["llm"]["model"])
+        model_row = QWidget()
+        h = QHBoxLayout(model_row)
+        h.setContentsMargins(0, 0, 0, 0)
+        h.setSpacing(8)
+        h.addWidget(self.model, 1)
+        self.btn_models = PushButton("获取模型列表", model_row)
         self.btn_models.clicked.connect(self.on_fetch_models)
-        model_row.addWidget(self.btn_models)
-        self.btn_ping = QPushButton("测试连接")
+        h.addWidget(self.btn_models)
+        self.btn_ping = PushButton("测试连接", model_row)
         self.btn_ping.clicked.connect(self.on_test_connection)
-        model_row.addWidget(self.btn_ping)
-        form.addRow("模型", model_row)
+        h.addWidget(self.btn_ping)
+        self._add_card(g1, FIF.ROBOT, "模型", "可下拉选择或手动输入模型名", model_row)
 
-        self.net_status = QLabel("")
+        # 状态文字:跨全宽,跟在分组卡片底部
+        self.net_status = BodyLabel("")
         self.net_status.setWordWrap(True)
-        form.addRow("", self.net_status)
+        g1.vBoxLayout.addWidget(self.net_status)
+        vbox.addWidget(g1)
 
-        # ---- 行为配置 ----
-        form.addRow(QLabel("—— 行为 ——"))
-        self.dry_run = QCheckBox("dry-run 模式(只识别和请求答案,不实际点击)")
+        # ---- 分组 2:行为 ----
+        g2 = SettingCardGroup("行为", content)
+        self.dry_run = SwitchSettingCard(
+            FIF.PAUSE, "dry-run 模式", "只识别和请求答案,不实际点击", parent=g2)
         self.dry_run.setChecked(cfg["action"]["dry_run"])
-        form.addRow("", self.dry_run)
+        _localize_switch(self.dry_run)
+        g2.addSettingCard(self.dry_run)
 
-        self.scroll_steps = QSpinBox()
+        self.scroll_steps = SpinBox()
         self.scroll_steps.setRange(1, 20)
         self.scroll_steps.setValue(int(cfg["action"].get("fine_scroll_steps", 3)))
-        self.scroll_steps.setToolTip("方向键↓每次滚动按几下。约50px/次,次数越多单次滚动幅度越大")
-        form.addRow("每次滚动按↓次数", self.scroll_steps)
+        self._add_card(g2, FIF.SCROLL, "每次滚动按↓次数", "方向键↓每次滚动按几下,约 50px/次", self.scroll_steps)
 
-        self.click_delay = self._range_spin(cfg["action"]["click_delay"])
-        form.addRow("点击延时(秒,随机区间)", self.click_delay)
+        self.click_delay = self._range_edit(cfg["action"]["click_delay"])
+        self._add_card(g2, FIF.STOP_WATCH, "点击延时(秒)", "随机区间,格式:最小,最大", self.click_delay)
 
-        self.next_delay = self._range_spin(cfg["action"]["next_delay"])
-        form.addRow("翻页延时(秒,随机区间)", self.next_delay)
+        self.next_delay = self._range_edit(cfg["action"]["next_delay"])
+        self._add_card(g2, FIF.HISTORY, "翻页延时(秒)", "随机区间,格式:最小,最大", self.next_delay)
+        vbox.addWidget(g2)
 
-        # ---- 窗口配置 ----
-        form.addRow(QLabel("—— 窗口 ——"))
-        self.title_keywords = QLineEdit(",".join(cfg["window"]["title_keywords"]))
+        # ---- 分组 3:窗口 ----
+        g3 = SettingCardGroup("窗口", content)
+        self.title_keywords = LineEdit()
+        self.title_keywords.setText(",".join(cfg["window"]["title_keywords"]))
         self.title_keywords.setPlaceholderText("学习通")
-        form.addRow("窗口标题关键词(逗号分隔)", self.title_keywords)
+        self.title_keywords.setMinimumWidth(280)
+        self._add_card(g3, FIF.APPLICATION, "窗口标题关键词", "多个关键词用逗号分隔", self.title_keywords)
+        vbox.addWidget(g3)
 
-        # ---- 网页版配置 ----
-        form.addRow(QLabel("—— 网页版 ——"))
-        self.default_browser = QComboBox()
-        self.default_browser.addItem("(未选择)", "")
-        self.default_browser.addItem("Edge", "edge")
-        self.default_browser.addItem("Chrome", "chrome")
+        # ---- 分组 4:网页版 ----
+        g4 = SettingCardGroup("网页版", content)
+        self.default_browser = ComboBox()
+        self.default_browser.addItem("(未选择)", userData="")
+        self.default_browser.addItem("Edge", userData="edge")
+        self.default_browser.addItem("Chrome", userData="chrome")
         saved_browser = cfg.get("web", {}).get("default_browser", "")
         idx = self.default_browser.findData(saved_browser)
         self.default_browser.setCurrentIndex(idx if idx >= 0 else 0)
-        self.default_browser.setToolTip(
-            "网页版模式将拉起该浏览器的程序专用实例(独立配置,不影响日常浏览器),\n"
-            "首次使用需在弹出的窗口中登录学习通一次,之后登录态保留")
-        form.addRow("默认浏览器", self.default_browser)
+        self._add_card(g4, FIF.GLOBE, "默认浏览器",
+                       "网页版模式拉起该浏览器的专用实例,登录态保留", self.default_browser)
 
-        self.cdp_port = QSpinBox()
+        self.cdp_port = SpinBox()
         self.cdp_port.setRange(1024, 65535)
         self.cdp_port.setValue(int(cfg.get("web", {}).get("cdp_port", 9222)))
-        form.addRow("调试端口", self.cdp_port)
+        self._add_card(g4, FIF.CODE, "调试端口", "专用浏览器 CDP 调试端口", self.cdp_port)
 
-        self.launch_browser = QCheckBox("插件模式自动拉起专用浏览器")
+        self.launch_browser = SwitchSettingCard(
+            FIF.SPEED_HIGH, "插件模式自动拉起专用浏览器",
+            "取消勾选则使用日常浏览器(需手动装一次插件)", parent=g4)
         self.launch_browser.setChecked(cfg.get("web", {}).get("launch_browser", True))
-        self.launch_browser.setToolTip(
-            "勾选:点开始时自动拉起带插件的程序专用浏览器实例;\n"
-            "取消:使用你日常的浏览器(需手动装一次插件,详见开始后日志指引:\n"
-            "扩展管理页开启开发人员模式 → 加载解压缩的扩展 → 选 webextension 目录)")
-        form.addRow("", self.launch_browser)
+        _localize_switch(self.launch_browser)
+        g4.addSettingCard(self.launch_browser)
+        vbox.addWidget(g4)
 
-        layout.addLayout(form)
+        # ---- 分组 5:外观 ----
+        g5 = SettingCardGroup("外观", content)
+        self.theme_combo = ComboBox()
+        self.theme_combo.addItem("深色模式", userData="dark")
+        self.theme_combo.addItem("浅色模式", userData="light")
+        self.theme_combo.addItem("跟随系统", userData="auto")
+        saved_theme = str(cfg.get("ui", {}).get("theme", "dark")).lower()
+        idx = self.theme_combo.findData(saved_theme)
+        self.theme_combo.setCurrentIndex(idx if idx >= 0 else 0)
+        self._add_card(g5, FIF.BRUSH, "主题模式", "深色 / 浅色 / 跟随系统,选择后立即生效", self.theme_combo)
+        self.theme_combo.currentIndexChanged.connect(self._on_theme_changed)
+        vbox.addWidget(g5)
 
-        buttons = QDialogButtonBox(QDialogButtonBox.Save | QDialogButtonBox.Cancel)
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
+        self.viewLayout.addWidget(scroll)
+
+    @staticmethod
+    def _add_card(group, icon, title, content, widget):
+        """SettingCard 右侧嵌入自定义控件(不带 configItem 的裸卡片模式)"""
+        card = SettingCard(icon, title, content, group)
+        card.hBoxLayout.addWidget(widget, 0, Qt.AlignRight)
+        card.hBoxLayout.addSpacing(16)
+        group.addSettingCard(card)
+        return card
+
+    # ---------- 状态文字着色(颜色随主题动态取色) ----------
+
+    def _set_status(self, text: str, level: str):
+        self._net_status_level = level
+        self.net_status.setText(text)
+        self._reapply_status_color()
+
+    def _reapply_status_color(self):
+        key = _STATUS_COLOR_KEYS.get(self._net_status_level, "text_muted")
+        self.net_status.setStyleSheet(f"color: {gui_theme.ark()[key]};")
+
+    # ---------- 主题切换:立即生效,持久化在 collect() 的 ui 节 ----------
+
+    def _on_theme_changed(self, index: int):
+        mode = self.theme_combo.itemData(index)
+        fluent_theme = {"dark": Theme.DARK, "light": Theme.LIGHT}.get(mode, Theme.AUTO)
+        # 先持久化:setTheme 发射的 themeChangedFinished 会触发主窗口回读
+        # Config 同步 _theme_mode,顺序反了主窗口会读到旧值。
+        # Config 为单例,主窗口与本对话框共享同一份数据。
+        Config.get().update("ui", {"theme": mode})
+        Config.get().reload()
+        # setThemeColor 内部会再刷一次样式表,必须先调;
+        # setTheme 最后发 themeChangedFinished,状态色在那里重新应用才不会被覆盖
+        setThemeColor(gui_theme.ACCENT_HEX)
+        setTheme(fluent_theme)
+        self.update()
 
     # ---------- 网络任务(后台线程) ----------
 
@@ -128,7 +223,7 @@ class ConfigDialog(QDialog):
         return {
             "base_url": self.base_url.text().strip(),
             "api_key": self.api_key.text().strip(),
-            "model": self.model.currentText().strip(),
+            "model": self.model.text().strip(),
             "temperature": self.cfg["llm"].get("temperature", 0.1),
             "timeout": 15,
         }
@@ -151,63 +246,59 @@ class ConfigDialog(QDialog):
         """获取服务端模型列表填充下拉框"""
         if not self._check_llm_inputs():
             return
-        self.net_status.setText("正在获取模型列表...")
-        self.net_status.setStyleSheet("color: gray;")
+        self._set_status("正在获取模型列表...", "busy")
         self._run_task("models", lambda: LLMClient(self._llm_cfg()).list_models())
 
     def on_test_connection(self):
         """测试模型连接并显示往返延迟"""
         if not self._check_llm_inputs():
             return
-        self.net_status.setText("正在测试连接...")
-        self.net_status.setStyleSheet("color: gray;")
+        self._set_status("正在测试连接...", "busy")
         self._run_task("ping", lambda: LLMClient(self._llm_cfg()).ping())
 
     def _check_llm_inputs(self) -> bool:
         if not self.base_url.text().strip() or not self.api_key.text().strip():
-            QMessageBox.warning(self, "缺少配置", "请先填写 Base URL 和 API Key")
+            InfoBar.warning("缺少配置", "请先填写 Base URL 和 API Key",
+                            duration=3000, parent=self)
             return False
-        if not self.model.currentText().strip() and self.sender() is self.btn_ping:
-            QMessageBox.warning(self, "缺少配置", "请先填写或选择模型名")
+        if not self.model.text().strip() and self.sender() is self.btn_ping:
+            InfoBar.warning("缺少配置", "请先填写或选择模型名",
+                            duration=3000, parent=self)
             return False
         return True
 
     def _on_task_finished(self, task: str, ok: bool, payload):
         self.btn_models.setEnabled(True)
         self.btn_ping.setEnabled(True)
-        if task == "port":
-            self._on_port_finished(ok, payload)
-            return
         if task == "models":
             if not ok:
-                self.net_status.setText(f"获取失败: {payload}")
-                self.net_status.setStyleSheet("color: red;")
+                self._set_status(f"获取失败: {payload}", "err")
                 return
-            current = self.model.currentText()
+            current = self.model.text()
             self.model.clear()
             self.model.addItems(payload)
             if current in payload:
-                self.model.setCurrentText(current)
-            self.net_status.setText(f"获取到 {len(payload)} 个模型")
-            self.net_status.setStyleSheet("color: green;")
+                self.model.setText(current)
+            self._set_status(f"获取到 {len(payload)} 个模型", "ok")
         else:  # ping
             if not ok:
-                self.net_status.setText(f"连接失败: {payload}")
-                self.net_status.setStyleSheet("color: red;")
+                self._set_status(f"连接失败: {payload}", "err")
                 return
             elapsed, reply = payload
-            self.net_status.setText(
-                f"连接成功,延迟 {elapsed * 1000:.0f} ms,模型回复: {reply[:30]}")
-            self.net_status.setStyleSheet("color: green;")
+            self._set_status(
+                f"连接成功,延迟 {elapsed * 1000:.0f} ms,模型回复: {reply[:30]}", "ok")
 
     # ---------- 收集 ----------
 
     @staticmethod
-    def _range_spin(range_list) -> QLineEdit:
+    def _range_edit(range_list) -> LineEdit:
         """延时范围以文本框呈现,格式: 最小,最大"""
-        return QLineEdit(f"{range_list[0]},{range_list[1]}")
+        edit = LineEdit()
+        edit.setText(f"{range_list[0]},{range_list[1]}")
+        edit.setMinimumWidth(180)
+        return edit
 
-    def _parse_range(self, widget: QLineEdit, default: list) -> list:
+    def _parse_range(self, widget: LineEdit, default: list) -> list:
         try:
             parts = widget.text().split(",")
             values = [float(p.strip()) for p in parts if p.strip()]
@@ -220,13 +311,13 @@ class ConfigDialog(QDialog):
         return default
 
     def collect(self) -> dict:
-        """返回各节配置的更新字典"""
+        """返回各节配置的更新字典(ui 节新增:主题随保存持久化)"""
         keywords = [k.strip() for k in self.title_keywords.text().split(",") if k.strip()]
         return {
             "llm": {
                 "base_url": self.base_url.text().strip(),
                 "api_key": self.api_key.text().strip(),
-                "model": self.model.currentText().strip(),
+                "model": self.model.text().strip(),
             },
             "action": {
                 "dry_run": self.dry_run.isChecked(),
@@ -241,5 +332,8 @@ class ConfigDialog(QDialog):
                 "default_browser": self.default_browser.currentData(),
                 "cdp_port": self.cdp_port.value(),
                 "launch_browser": self.launch_browser.isChecked(),
+            },
+            "ui": {
+                "theme": self.theme_combo.currentData(),
             },
         }

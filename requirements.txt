@@ -1,11 +1,9 @@
-# 精确锁定版本(由 pip freeze 生成,Python 3.11.9 验证通过)
-# 支持范围: Python 3.11 / 3.12(全部二进制包 cp312 wheel 已验证齐备)
-# Python 3.13+ 暂不支持: rapidocr-onnxruntime 1.4.x 声明 Requires-Python < 3.13
-# 升级依赖请在本机验证全部测试通过后重新生成
 annotated-types==0.8.0
 anyio==4.14.2
 colorama==0.4.6
+darkdetect==0.8.0
 flatbuffers==25.12.19
+greenlet==3.5.5
 h11==0.16.0
 httpcore2==2.12.0
 httpx2==2.12.0
@@ -19,13 +17,14 @@ openai==3.6.0
 opencv-python==5.0.0.93
 packaging==26.3
 pillow==12.3.0
-pluggy==1.6.0
 playwright==1.62.0
+pluggy==1.6.0
 protobuf==7.36.0
 PyAutoGUI==0.9.54
 pyclipper==1.4.0
 pydantic==2.13.5
 pydantic_core==2.46.5
+pyee==13.0.1
 PyGetWindow==0.0.9
 Pygments==2.21.0
 PyMsgBox==2.0.1
@@ -33,8 +32,10 @@ pyperclip==1.11.0
 PyRect==0.2.0
 PyScreeze==1.0.1
 PySide6==6.11.2
+PySide6-Fluent-Widgets==1.11.3
 PySide6_Addons==6.11.2
 PySide6_Essentials==6.11.2
+PySideSix-Frameless-Window==0.8.2
 pytest==9.1.1
 pytweening==1.2.0
 pywin32==312
