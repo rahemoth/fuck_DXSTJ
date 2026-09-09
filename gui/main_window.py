@@ -9,6 +9,7 @@
 线程模型:GUI 主线程 + Worker(QThread),Executor 事件经信号转发回 GUI,保持不变。
 """
 import re
+import time
 
 from PySide6.QtCore import (
     Qt, QThread, Signal, QObject, QTimer, QElapsedTimer, QRectF,
@@ -18,7 +19,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTreeWidgetItem,
-    QPushButton, QButtonGroup, QSizePolicy,
+    QPushButton, QButtonGroup, QSizePolicy, QApplication,
 )
 
 from qfluentwidgets import (
@@ -34,6 +35,10 @@ from core.log import setup_logging, set_gui_callback, get_logger
 from core.pipeline.executor import Executor, ExecutorEvent
 from gui import theme
 from gui.config_dialog import ConfigDialog
+from gui.screenshot import (
+    RegionSelector, ScreenshotResultDialog, ScreenshotSearchWorker,
+    capture_virtual_screen, crop_for_ocr, pil_to_qpixmap,
+)
 from gui.theme import ark, paint_chamfer, draw_corner_bracket, THEME_NAMES, THEME_ORDER
 
 TYPE_NAMES = {"single": "单选题", "multiple": "多选题", "judge": "判断题",
@@ -374,6 +379,10 @@ class MainWindow(FluentWidget):
         self.setMicaEffectEnabled(False)
         self.setCustomBackgroundColor(theme.ARK_LIGHT["bg"], theme.ARK_DARK["bg"])
         self.worker: Worker | None = None
+        self._selector: RegionSelector | None = None
+        # 截图搜题:可能因「继续截图」出现多个 worker 并存,列表持有防 GC
+        self._shot_workers: list[ScreenshotSearchWorker] = []
+        self._shot_continue = False
 
         # 运行统计与计时
         self._done_count = 0
@@ -537,11 +546,15 @@ class MainWindow(FluentWidget):
         root.addWidget(log_card, stretch=1)
 
     def _build_title_bar_buttons(self):
-        """网课助手(预留)/ 环境检测 / 设置 / 主题切换放入标题栏右侧(释放内容区宽度)"""
+        """网课助手(预留)/ 截图搜题 / 环境检测 / 设置 / 主题切换放入标题栏右侧"""
         self.btn_course = TransparentToolButton(FIF.EDUCATION, self.titleBar)
         self.btn_course.setToolTip("网课助手(预留)")
         self.btn_course.setEnabled(False)   # 功能未实现,置灰
         # 未来实现时: self.btn_course.clicked.connect(self.on_course_assistant)
+
+        self.btn_shot = TransparentToolButton(FIF.CAMERA, self.titleBar)
+        self.btn_shot.setToolTip("截图搜题(框选一道题,OCR + AI 给出答案与解析)")
+        self.btn_shot.clicked.connect(self.on_screenshot_search)
 
         self.btn_env = TransparentToolButton(FIF.SEARCH, self.titleBar)
         self.btn_env.setToolTip("环境检测")
@@ -557,9 +570,78 @@ class MainWindow(FluentWidget):
 
         layout = self.titleBar.hBoxLayout
         insert_at = layout.count() - 1  # min/max/close 按钮组之前
-        for btn in (self.btn_course, self.btn_env, self.btn_config, self.btn_theme):
+        for btn in (self.btn_course, self.btn_shot, self.btn_env,
+                    self.btn_config, self.btn_theme):
             layout.insertWidget(insert_at, btn, 0, Qt.AlignVCenter)
             insert_at += 1
+
+    # ---------- 截图搜题 ----------
+
+    def on_screenshot_search(self):
+        """隐藏本程序 → 冻结全屏 → 拖选一道题 → OCR → 模型给出答案与解析"""
+        cfg = Config.get()
+        if not cfg["llm"]["api_key"] or "xxxx" in cfg["llm"]["api_key"]:
+            InfoBar.warning("缺少配置", "请先在【设置】中填写 API Key 和模型信息",
+                            duration=3000, parent=self)
+            return
+        # 默认隐藏本程序所有界面再截图,避免把自家窗口截进题目
+        self.hide()
+        QApplication.processEvents()
+        time.sleep(0.2)   # 等窗口管理器/DWM 真正把窗口从屏幕上移除
+        try:
+            image, virt, dpr = capture_virtual_screen()
+        except Exception as e:
+            self.show()
+            InfoBar.error("截图失败", str(e), duration=4000, parent=self)
+            return
+        self._selector = RegionSelector(image, virt, dpr)
+        self._selector.confirmed.connect(self._on_region_confirmed)
+        self._selector.cancelled.connect(self._on_region_cancelled)
+        self._selector.show()
+
+    def _on_region_confirmed(self, rect):
+        sel = self._selector
+        crop = crop_for_ocr(sel.image, sel.virt, sel.dpr, rect)
+        self._on_region_cancelled()  # 清理覆盖层并恢复主窗口显示
+
+        dlg = ScreenshotResultDialog(pil_to_qpixmap(crop), self)
+        cfg = Config.get()
+        worker = ScreenshotSearchWorker(crop, cfg.data)
+        self._shot_workers.append(worker)
+        worker.finished.connect(
+            lambda: self._shot_workers.remove(worker)
+            if worker in self._shot_workers else None)
+        worker.stage.connect(dlg.set_stage)
+        worker.result.connect(dlg.set_result)
+        worker.error.connect(dlg.set_error)
+        dlg.continue_requested.connect(self._on_shot_continue)
+        worker.start()
+        dlg.exec()
+
+        # 对话框已关闭:断开信号,防止仍在运行的 worker 回调已销毁对象
+        for sig, slot in ((worker.stage, dlg.set_stage),
+                          (worker.result, dlg.set_result),
+                          (worker.error, dlg.set_error)):
+            try:
+                sig.disconnect(slot)
+            except RuntimeError:
+                pass
+        dlg.deleteLater()
+        if self._shot_continue:
+            self._shot_continue = False
+            # 等对话框完全销毁、事件循环干净后再进入下一轮截图
+            QTimer.singleShot(0, self.on_screenshot_search)
+
+    def _on_shot_continue(self):
+        self._shot_continue = True
+
+    def _on_region_cancelled(self):
+        if self._selector is not None:
+            self._selector.close()
+            self._selector.deleteLater()
+            self._selector = None
+        if not self.isVisible():
+            self.show()   # 恢复截图前隐藏的主窗口
 
     def _set_answer_color(self, hex_color: str):
         self.lbl_answer.setStyleSheet(f"color: {hex_color};")

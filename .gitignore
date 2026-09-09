@@ -14,3 +14,4 @@ config.yaml
 .trae/
 .idea/
 .vscode/
+.zcode/
