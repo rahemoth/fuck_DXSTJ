@@ -9,7 +9,6 @@
 线程模型:GUI 主线程 + Worker(QThread),Executor 事件经信号转发回 GUI,保持不变。
 """
 import re
-import time
 
 from PySide6.QtCore import (
     Qt, QThread, Signal, QObject, QTimer, QElapsedTimer, QRectF,
@@ -19,7 +18,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QTreeWidgetItem,
-    QPushButton, QButtonGroup, QSizePolicy, QApplication,
+    QPushButton, QButtonGroup, QSizePolicy,
 )
 
 from qfluentwidgets import (
@@ -586,8 +585,11 @@ class MainWindow(FluentWidget):
             return
         # 默认隐藏本程序所有界面再截图,避免把自家窗口截进题目
         self.hide()
-        QApplication.processEvents()
-        time.sleep(0.2)   # 等窗口管理器/DWM 真正把窗口从屏幕上移除
+        # 用 QTimer 异步等待窗口管理器/DWM 真正移除窗口,避免阻塞 GUI 主线程
+        QTimer.singleShot(200, self.start_capture)
+
+    def start_capture(self):
+        """隐藏窗口完成后再冻结全屏并弹出选区覆盖层"""
         try:
             image, virt, dpr = capture_virtual_screen()
         except Exception as e:
