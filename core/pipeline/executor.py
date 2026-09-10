@@ -597,6 +597,7 @@ class Executor:
         extras = [l for l in centers if l not in labels]
 
         img = self.window.screenshot()
+        ref_img = img          # 点击前帧:复查时帧对齐的参考(点击后页面若自动滚动,与此帧比)
         already = [l for l in pending if self._is_selected(img, *centers[l])]
         if already:
             logger.info(f"题目{num} 选项 {already} 已处于选中状态,跳过点击")
@@ -615,14 +616,16 @@ class Executor:
         time.sleep(0.3)
 
         # 复查并纠正:点击可能引起页面自动滚动(尤其点近视口底部的选项),
-        # 每轮以题干锚点位移计算滚动偏移,把选项按原布局整体平移后检测
-        # 选中状态(见 _fresh_centers 注释:重新解析的选项坐标不可靠)。
+        # 每轮以帧间图像对齐(题干锚点位移的图像版)计算滚动偏移,把选项
+        # 按原布局整体平移后检测选中状态(见 _fresh_centers 注释:重新
+        # 解析的选项坐标不可靠)。以点击前(选中检测用)的截图为参考帧,
+        # 各轮复查只需对齐帧位移,免旧实现的整页 OCR 重解析。
         # 首轮发现误选或漏选时主动纠正:先取消误选的非目标选项,再补点
         # 仍未选中的目标;纠正后再次复查确认。题目滚出视口时绝不补点——
         # 旧坐标会点到别的选项,把已选对的答案改成错的。
         for attempt in range(3):
             img = self.window.screenshot()
-            centers = self._fresh_centers(q, img)
+            centers = self._fresh_centers(q, img, ref_img=ref_img)
             if centers is None:
                 logger.info(f"题目{num} 复查时题目已滚出视口,视为已作答(原点击应已生效)")
                 return True
@@ -645,12 +648,36 @@ class Executor:
         logger.warning(f"题目{num} 选项 {unselected} 点击后未检出选中,请人工检查")
         return False
 
-    def _fresh_centers(self, q: Question, img) -> dict[str, tuple[int, int]] | None:
+    def _fresh_centers(self, q: Question, img,
+                        ref_img=None) -> dict[str, tuple[int, int]] | None:
         """重新定位题目,返回平移后的最新选项坐标;定位失败或滚出视口返回 None。
-        偏移量以题干锚点(整块大文本,识别可靠)的 y 位移计算,选项按原布局
-        整体平移——不复用重新解析出的选项坐标:小字符选项(单个数字/字母圈)
+        偏移量即点击前后视口的滚动位移,选项按原布局整体平移——
+        不复用重新解析出的选项坐标:小字符选项(单个数字/字母圈)
         在整页 OCR 下大量漏检,选项-标签对应关系不可靠,实测把 A 错位到
-        下两行,补点会把已选对的答案改成错的。"""
+        下两行,补点会把已选对的答案改成错的。
+
+        批量模式优先用 scanner 的帧间条带对齐(frame_offset)测位移,
+        免去旧实现的整页 OCR(每次约 1.4s × 每题最多 3 轮复查):点击只
+        改变选项圆圈局部像素(31×31),条带多数表决天然抗局部污染。
+        无 scanner/对齐失败时回退整页 OCR 重新解析(原路径,兼容逐题模式
+        与内容变化场景)。"""
+        # ---- 路径 1:帧间条带对齐(免 OCR) ----
+        if ref_img is not None and self.scanner is not None \
+                and self.scanner.result is not None:
+            moved = self.scanner.frame_offset(ref_img, img)
+            if moved is not None:
+                # 页面向下滚 moved → 内容上移 moved → 选项 y - moved
+                delta = -moved
+                h = img.size[1]
+                # 边界余量 30px:选项圆圈高约 31px,部分露出视口时选中检测
+                # 不可靠(假阴性会触发补点反选已选对的选项),宁可视为已作答
+                if any(not (30 < y + delta < h - 30)
+                       for (_x, y) in q.option_centers.values()):
+                    return None   # 题目(部分)滚出视口,坐标不可用
+                return {label: (x, y + delta)
+                        for label, (x, y) in q.option_centers.items()}
+            logger.debug("复查帧对齐失败,回退整页 OCR 重新定位")
+        # ---- 路径 2:整页 OCR 重新解析(兑底) ----
         try:
             blocks = self.ocr.run(img)
             for qq in self.locator.locate_all(blocks, img.size[1], img.size[0]):

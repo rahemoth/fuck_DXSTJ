@@ -10,6 +10,8 @@ llm:
   temperature: 0.1
   timeout: 60
   max_retries: 1
+  concurrency: 4              # LLM 并发求解线程数(批量模式整页扫描后并发取回全部答案);
+                              # 过高并发可能触发 API 网关限流,如遇限流/超时可下调
 
 action:
   dry_run: true           # true=只模拟不真实点击(首次测试建议开启)
@@ -23,6 +25,9 @@ action:
   - 0.6
   page_wait: 1.0              # 导航/Home 跳转后等待页面稳定(秒)
   scan_settle: 0.7            # 整页扫描相邻帧滚动后的等待(秒)
+  scan_step_ratio: 0.7        # 整页扫描每帧步长(占视口高比例,0.7 屏≈480px);
+                              # 实际步长还受条带可见性/拼接覆盖自动截断
+                              # (0.77 屏高-顶栏、0.63 屏高),过大会回退小步
   fine_scroll_wait: 0.6        # 方向键↓微滚后等待页面稳定(秒)
   verify_wait: 0.6             # 点击选项后等待选中高亮生效(秒),再截图验证
 

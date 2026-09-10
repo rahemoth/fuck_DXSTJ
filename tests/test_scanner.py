@@ -275,6 +275,112 @@ def test_scroll_to_short_upward_keeps_arrow_up():
     assert abs(window.scroll - 200) <= 30
 
 
+def test_scroll_to_home_immediately_scrolls_down():
+    """改动2:Home 跳顶后应立即按估算键数下滚,不空耗一轮测量迭代。
+    旧实现的缺陷:Home 后仅 sleep 等下一轮 current_offset 从 0 起测,
+    浪费 4 轮迭代上限中的一轮。用 current_offset 调用计数区分:
+    立即下滚 2 轮收敛(首页测量 + 落点确认),空转版需 3 轮。"""
+    s, window = make_scanner()
+    s.scan()
+    window.scroll = 900
+    calls = {"n": 0}
+    orig = s.current_offset
+
+    def spy(img):
+        calls["n"] += 1
+        return orig(img)
+
+    s.current_offset = spy
+    try:
+        off = s.scroll_to(150)
+    finally:
+        s.current_offset = orig
+    # 第1轮:测得 900 → Home+↓4(150/40≈4 键);第2轮:落在 160±容差内返回
+    assert calls["n"] <= 2, f"Home 后应立即下滚,不应空耗测量轮: {calls['n']} 轮"
+    assert abs(off - 150) <= 30
+    assert abs(window.scroll - 150) <= 30
+
+
+# ---------------- current_offset 先验窗口搜索(改动3) ----------------
+
+def test_current_offset_prior_follows_keypresses():
+    """改动3:按键位移估计维护先验——上次实测后按方向键,
+    current_offset 在先验 ±200 窗口内直接命中,不触发粗搜兑底
+    (用 _coarse_offset 计数验证;scroll_to 内部同样先调
+    _note_presses 再测量,行为一致)。"""
+    s, window = make_scanner()
+    s.scan()
+    window.scroll = 500
+    assert abs(s.current_offset(window.screenshot()) - 500) <= 4
+    # 程序按键:页面真实 +200px,同时告知先验系统(同 scroll_to 内部)
+    s.input.arrow_down(5)
+    s._note_presses(5)
+    called = {"coarse": 0}
+    orig = s._coarse_offset
+
+    def spy(cur, lng, x1, x2):
+        called["coarse"] += 1
+        return orig(cur, lng, x1, x2)
+
+    s._coarse_offset = spy
+    try:
+        off = s.current_offset(window.screenshot())
+    finally:
+        s._coarse_offset = orig
+    assert abs(off - 700) <= 4
+    assert called["coarse"] == 0, "先验有效时不应触发粗搜兑底"
+
+
+def test_current_offset_recovers_when_prior_invalid():
+    """改动3:先验失效(外部大幅跳变,真实偏移在窗口外)时,经降采样
+    粗搜兑底仍能恢复正确偏移——窗口化不得失去定位恢复手段。"""
+    s, window = make_scanner()
+    s.scan()
+    window.scroll = 500
+    assert abs(s.current_offset(window.screenshot()) - 500) <= 4
+    # 跳变 500px:先验=500 → 窗口 [300,700] 不含真实 0;
+    # 窗口内单票假对齐(off=550,黑块边缘部分重叠)应被 ≥2 票共识拒绝
+    window.scroll = 0
+    assert abs(s.current_offset(window.screenshot()) - 0) <= 4
+
+
+def test_note_home_zeroes_prior():
+    """改动2/3联动:Home 跳顶后先验归零,顶部测量在窗口内直接命中
+    (免粗搜/全范围搜索)——长距回卷后定位成本不随页长增长。"""
+    s, window = make_scanner()
+    s.scan()
+    window.scroll = 600
+    assert abs(s.current_offset(window.screenshot()) - 600) <= 4
+    s.input.press_home()
+    s._note_home()
+    called = {"coarse": 0}
+    orig = s._coarse_offset
+
+    def spy(cur, lng, x1, x2):
+        called["coarse"] += 1
+        return orig(cur, lng, x1, x2)
+
+    s._coarse_offset = spy
+    try:
+        off = s.current_offset(window.screenshot())
+    finally:
+        s._coarse_offset = orig
+    assert abs(off - 0) <= 4
+    assert called["coarse"] == 0
+
+
+def test_long_gray_cache_reused():
+    """改动3:长图灰度数组缓存——同一长图多次 current_offset
+    复用同一数组对象,不再重复 convert("L")(长页上万行,数百毫秒/次)。"""
+    s, window = make_scanner()
+    s.scan()
+    g1 = s._lng_gray
+    assert g1 is not None
+    window.scroll = 300
+    s.current_offset(window.screenshot())
+    assert s._lng_gray is g1, "同一长图应复用缓存的灰度数组"
+
+
 # ---------------- 长图 → 视口坐标换算 ----------------
 
 def test_to_viewport_translation():

@@ -21,6 +21,8 @@ DEFAULT_CONFIG = {
         "temperature": 0.1,
         "timeout": 60,
         "max_retries": 1,
+        # LLM 并发求解线程数;旧配置缺失时兑底为 1(串行,旧行为不变)
+        "concurrency": 1,
     },
     "action": {
         "dry_run": True,
