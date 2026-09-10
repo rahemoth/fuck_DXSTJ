@@ -8,6 +8,7 @@
 """
 import ctypes
 import ctypes.wintypes as wintypes
+import time
 
 import win32gui
 import win32ui
@@ -112,40 +113,67 @@ class WindowCapture:
         return r - l, b - t
 
     def bring_to_front(self):
-        """把窗口带到前台(pyautogui 真实点击前调用)。
-        后台进程直接 SetForegroundWindow 会被 Windows 前台锁拒绝,
-        用 AttachThreadInput 技巧绕过;失败时点击本身也能激活窗口。
-        但 SetForegroundWindow 失败 + 窗口被其他窗口(如终端)遮盖时,
-        点击会落到遮盖窗口上——所以先 SetWindowPos 抬到 Z 序顶
-        (不受前台锁限制),保证点击必落在本窗口。"""
+        """把窗口带到前台(pyautogui 真实点击/键入前调用)。
+        后台进程直接 SetForegroundWindow 会被 Windows 前台锁拒绝,三层手段:
+        1) SetWindowPos 抬 Z 序到顶(不激活,不受前台锁限制)——保证后续
+           真实点击的落点在本窗口(点击本身也会激活窗口,兜底);
+        2) AttachThreadInput 附加前台线程输入队列后抢占前台;
+        3) 抢占失败则发一次无害 ALT 键——Windows 前台锁允许"刚收到输入
+           事件"的进程改前台,再重试 SetForegroundWindow。"""
         self.ensure_connected()
         try:
             if win32gui.IsIconic(self.hwnd):
                 win32gui.ShowWindow(self.hwnd, win32con.SW_RESTORE)
             if win32gui.GetForegroundWindow() == self.hwnd:
                 return
-            # 先抬 Z 序到顶(不激活):点击落点必在本窗口,点击后再激活
+            # 1) 先抬 Z 序(不激活):点击落点必在本窗口
             ctypes.windll.user32.SetWindowPos(
                 self.hwnd, win32con.HWND_TOP, 0, 0, 0, 0,
                 win32con.SWP_NOMOVE | win32con.SWP_NOSIZE
                 | win32con.SWP_NOACTIVATE)
-            import win32api
-
-            fg = win32gui.GetForegroundWindow()
-            fg_tid, _ = win32process.GetWindowThreadProcessId(fg)
-            my_tid = win32api.GetCurrentThreadId()
-            attached = False
-            try:
-                # AttachThreadInput 不在 win32api 里,用 ctypes 调 user32
-                windll = ctypes.windll.user32
-                windll.AttachThreadInput(my_tid, fg_tid, True)
-                attached = True
-                win32gui.SetForegroundWindow(self.hwnd)
-            finally:
-                if attached:
-                    windll.AttachThreadInput(my_tid, fg_tid, False)
+            # 2)+3) 抢占前台(附加队列 + ALT 技巧,最多 3 轮)
+            self._force_foreground(tries=3)
         except Exception as e:
             logger.warning(f"置前窗口失败(已抬Z序,点击仍会激活): {e}")
+
+    def _force_foreground(self, tries: int = 3) -> bool:
+        """附加前台线程输入队列 + ALT 键技巧抢占前台。
+        每轮先 AttachThreadInput 后 SetForegroundWindow;失败则轻按一次
+        ALT(满足前台锁)再抢。返回最终是否处于前台。"""
+        import win32api
+        u = ctypes.windll.user32
+        for _ in range(tries):
+            try:
+                if win32gui.GetForegroundWindow() == self.hwnd:
+                    return True
+                fg = win32gui.GetForegroundWindow()
+                fg_tid, _ = win32process.GetWindowThreadProcessId(fg)
+                my_tid = win32api.GetCurrentThreadId()
+                u.AttachThreadInput(my_tid, fg_tid, True)
+                try:
+                    win32gui.SetForegroundWindow(self.hwnd)
+                finally:
+                    u.AttachThreadInput(my_tid, fg_tid, False)
+                if win32gui.GetForegroundWindow() == self.hwnd:
+                    return True
+            except Exception:
+                pass
+            # ALT 技巧:按一次 ALT 键,让本进程满足前台锁的"近期输入"条件
+            try:
+                u.keybd_event(win32con.VK_MENU, 0, 0, 0)
+                time.sleep(0.03)
+                u.keybd_event(win32con.VK_MENU, 0, win32con.KEYEVENTF_KEYUP, 0)
+                time.sleep(0.05)
+                win32gui.SetForegroundWindow(self.hwnd)
+            except Exception:
+                pass
+            if win32gui.GetForegroundWindow() == self.hwnd:
+                return True
+            time.sleep(0.15)
+        ok = win32gui.GetForegroundWindow() == self.hwnd
+        if not ok:
+            logger.warning("ALT 技巧后仍未取得前台(将依赖点击激活)")
+        return ok
 
     def post_scroll(self, notches: int, x: int, y: int):
         """向窗口投递滚轮消息(PostMessage 方式,无需窗口在前台)。

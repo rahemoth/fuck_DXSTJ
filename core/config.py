@@ -25,10 +25,10 @@ DEFAULT_CONFIG = {
     "action": {
         "dry_run": True,
         "click_delay": [0.8, 1.8],
-        "next_delay": [1.0, 2.0],
         "option_interval": [0.3, 0.6],
-        "scroll_clicks": 2,
-        "scroll_wait": 0.8,
+        # 做题模式: long_screenshot=整页长图扫描批量作答(失败自动回退逐题)
+        #           per_question=逐题识别作答(旧模式)
+        "answer_mode": "long_screenshot",
     },
     "ocr": {
         "confidence_threshold": 0.55,

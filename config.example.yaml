@@ -13,18 +13,17 @@ llm:
 
 action:
   dry_run: true           # true=只模拟不真实点击(首次测试建议开启)
+  answer_mode: long_screenshot   # 做题模式:long_screenshot=整页长图扫描批量作答
+                                 # (页面不适合时自动回退逐题);per_question=逐题识别作答
   click_delay:
   - 0.8
   - 1.8
-  next_delay:
-  - 1.0
-  - 2.0
   option_interval:
   - 0.3
   - 0.6
-  page_wait: 1.0              # 导航滚动后等待页面稳定(秒)
+  page_wait: 1.0              # 导航/Home 跳转后等待页面稳定(秒)
+  scan_settle: 0.7            # 整页扫描相邻帧滚动后的等待(秒)
   fine_scroll_wait: 0.6        # 方向键↓微滚后等待页面稳定(秒)
-  fine_scroll_steps: 3         # 方向键↓每次按键数(约50px/次;步幅超过约190px移动检测会失效)
   verify_wait: 0.6             # 点击选项后等待选中高亮生效(秒),再截图验证
 
 ocr:

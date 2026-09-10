@@ -119,16 +119,18 @@ class ConfigDialog(MessageBoxBase):
         _localize_switch(self.dry_run)
         g2.addSettingCard(self.dry_run)
 
-        self.scroll_steps = SpinBox()
-        self.scroll_steps.setRange(1, 20)
-        self.scroll_steps.setValue(int(cfg["action"].get("fine_scroll_steps", 3)))
-        self._add_card(g2, FIF.SCROLL, "每次滚动按↓次数", "方向键↓每次滚动按几下,约 50px/次", self.scroll_steps)
+        # 做题模式:long_screenshot=整页长图扫描批量作答 / per_question=逐题
+        self.batch_mode = SwitchSettingCard(
+            FIF.TILES, "长截图批量做题",
+            "开启=整页扫描后批量作答(页面不适合时自动回退逐题);"
+            "关闭=逐题识别作答(旧模式)", parent=g2)
+        self.batch_mode.setChecked(
+            cfg["action"].get("answer_mode", "long_screenshot") != "per_question")
+        _localize_switch(self.batch_mode)
+        g2.addSettingCard(self.batch_mode)
 
         self.click_delay = self._range_edit(cfg["action"]["click_delay"])
         self._add_card(g2, FIF.STOP_WATCH, "点击延时(秒)", "随机区间,格式:最小,最大", self.click_delay)
-
-        self.next_delay = self._range_edit(cfg["action"]["next_delay"])
-        self._add_card(g2, FIF.HISTORY, "翻页延时(秒)", "随机区间,格式:最小,最大", self.next_delay)
         vbox.addWidget(g2)
 
         # ---- 分组 3:窗口 ----
@@ -321,9 +323,9 @@ class ConfigDialog(MessageBoxBase):
             },
             "action": {
                 "dry_run": self.dry_run.isChecked(),
-                "fine_scroll_steps": self.scroll_steps.value(),
+                "answer_mode": "long_screenshot" if self.batch_mode.isChecked()
+                               else "per_question",
                 "click_delay": self._parse_range(self.click_delay, self.cfg["action"]["click_delay"]),
-                "next_delay": self._parse_range(self.next_delay, self.cfg["action"]["next_delay"]),
             },
             "window": {
                 "title_keywords": keywords or ["学习通"],
