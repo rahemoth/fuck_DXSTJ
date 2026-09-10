@@ -31,8 +31,11 @@ from core.vision.ocr import OcrBlock, OcrEngine
 
 logger = get_logger("pipeline.scanner")
 
-# 扫描帧数上限(40 帧 × ~0.7 视口 ≈ 28 屏,远超正常作业页)
-_MAX_FRAMES = 40
+# 扫描帧数默认上限(可通过配置 action.max_scan_frames 覆盖)。
+# 注意:每帧步长受单批按键上限约束(8键×40px=320px),并非 0.7 视口——
+# 732px 高视口下 40 帧仅覆盖 ~17.5 屏(12480px),超长作业页会被截断,
+# 故默认放宽到 120 帧(≈38400px+视口,足够 50+ 题的页面)
+_MAX_FRAMES_DEFAULT = 120
 # 单条带"良好对齐"的紧残差阈值:同位置截图 bit-exact(实测 0.000),
 # 错位条带即便白对白也 >1.5。吸顶标题/光标污染带残差常>30。
 # 用它统计每个偏移下"同时良好对齐的条带数"(内条数),多数表决:
@@ -99,11 +102,13 @@ class PageScanner:
         step_ratio = float(self.cfg["action"].get("scan_step_ratio", 0.7))
         settle = float(self.cfg["action"].get("scan_settle", 0.7))
         zero_streak = 0                            # 连续"无位移"批次数
+        max_frames = int(self.cfg["action"].get("max_scan_frames",
+                                                _MAX_FRAMES_DEFAULT))
         _MAX_PRESSES = 8                          # 单批按键上限:实测 40px/键
         # → ≤320px,保证最低对齐条带(0.55h≈568)的内容不被滚出视口;
         # 否则大位移后条带全部越界,空白页噪声会把位移误判为 0(假到底)
 
-        while len(frames) < _MAX_FRAMES:
+        while len(frames) < max_frames:
             self._check_stop()
             prev_img = frames[-1][1]
             # 估算按键数:目标页面步长 = step_ratio * h
@@ -120,7 +125,9 @@ class PageScanner:
             if moved is None:
                 # 无法条带对齐:区分"页面没动(到底)"与"动了但测不出
                 # (中途大片空白区)"——后者继续扫有漏采风险,回退逐题模式
-                if self._page_static(prev_img, img):
+                static = self._page_static(prev_img, img)
+                logger.info(f"[align] frame_offset=None, _page_static={static}")
+                if static:
                     moved = 0
                 else:
                     logger.warning("视口对齐失败(底部无内容且页面有变化),放弃整页扫描")
@@ -166,7 +173,13 @@ class PageScanner:
                         f"(本帧滚动 {moved}px, px/press≈{ppp and round(ppp, 1)})")
 
         max_offset = offset
-        logger.info(f"扫描到底:共 {len(frames)} 帧,页面总高约 {max_offset + h}px")
+        if len(frames) >= max_frames:
+            # 退出原因=帧数上限而非到底(到底时上面会有"连续N批无位移"):
+            # 最后一帧仍在正常滚动,页面尾部内容未进长图,解析出的题目不全
+            logger.warning(f"达到扫描帧数上限({max_frames}帧,累计 {offset}px),"
+                           "页面可能未扫完,尾部题目将被遗漏;"
+                           "可在配置 action.max_scan_frames 调大")
+        logger.info(f"扫描结束:共 {len(frames)} 帧,页面已扫高约 {max_offset + h}px")
 
         # ---- 拼接长图 ----
         # 第 2 帧起跳过顶部固定 chrome 带(见 _CHROME_H):该带是悬浮控件,
@@ -244,20 +257,36 @@ class PageScanner:
 
     def _content_band(self, w: int, h: int) -> tuple[int, int]:
         """对齐条带的 x 范围:题目内容区(排除左导航与右侧答题卡,
-        答题卡若为 fixed 定位不随滚动,会污染对齐信号)。"""
-        x1 = max(int(w * 0.1), self.locator.region[0] + 40)
+        答题卡若为 fixed 定位不随滚动,会污染对齐信号)。
+        x1 优先复用 InputController 已探测的侧边栏右缘(同运行期缓存),
+        兜底才用 roi 配置值——避免宽侧边栏机器上 x1 落进侧栏深色区,
+        深色像素被判为"有墨迹"把整条侧栏噪声带入对齐。"""
+        sidebar_right = self.input._safe_click_column() if self.input else None
+        if sidebar_right is not None:
+            x1 = max(sidebar_right + 5, int(w * 0.1), self.locator.region[0] + 40)
+        else:
+            x1 = max(int(w * 0.1), self.locator.region[0] + 40)
         x2 = max(x1 + 100, min(int(w * 0.75), self.locator.content_x2(w) - 30))
         return x1, x2
 
     def _pick_strips(self, arr: np.ndarray, x1: int, x2: int) -> list:
-        """取视口下部多个有内容的条带 [(y0, band)];全空白返回 []"""
+        """取视口下部多个有内容的条带 [(y0, band)];全空白返回 [].
+        墨迹判定放宽到灰度<220(原<200):学习通题目底部常有浅灰色工具栏
+        或判断题"对/错"短选项,其灰度约 200~220,原门槛把这类条带误判
+        为空白导致 frame_offset 返回 None,但页面又确实滚动了,触发
+        整条带对齐失败的放弃逻辑。放宽后只要条带内有足够深色像素
+        (占比 >= 0.3%)就参与对齐。"""
         h = arr.shape[0]
         strips = []
         for r0, r1 in self._STRIP_RATIOS:
             y0, y1b = int(h * r0), int(h * r1)
             band = arr[y0:y1b, x1:x2]
-            if float((band < 200).mean()) >= 0.005:
+            ink_ratio = float((band < 220).mean())
+            if ink_ratio >= 0.003:
                 strips.append((y0, band.astype(np.float32)))
+            else:
+                logger.debug(f"条带 y[{y0}-{y1b}] 墨迹占比 {ink_ratio:.3f} "
+                             f"<0.3%,跳过")
         return strips
 
     def _register(self, strips, a_tgt, x1: int, x2: int,
@@ -298,16 +327,112 @@ class PageScanner:
         """测量 img_cur 相对 img_prev 向下滚动的像素数。
         条带取 img_prev 下部多条(见 _STRIP_RATIOS),在 img_cur 全高用
         内条多数表决(_register)求对齐偏移;off=0 参与(0=未移动)。
-        返回 None 表示无条带能可靠测量(调用方应放弃而非当作到底)。"""
+        返回 None 表示无条带能可靠测量(调用方应放弃而非当作到底)。
+
+        条带对齐失败时会做两次兜底:
+        a) 估算 off = presses * ppp(ppp 从配置或实测值取),用 _register
+           只搜这一个偏移验证;
+        b) 全帧降采样(1/4)滑窗搜索最小残差位置,再放大回原分辨率验证。
+        兜底失败才真正返回 None。"""
         a1 = np.asarray(img_prev.convert("L"), dtype=np.int16)
         a2 = np.asarray(img_cur.convert("L"), dtype=np.int16)
         h, w = a1.shape
         x1, x2 = self._content_band(w, h)
         strips = self._pick_strips(a1, x1, x2)
-        if not strips:
+        n_total = len(self._STRIP_RATIOS)
+        logger.info(f"[align] 条带对齐: x=[{x1},{x2}], "
+                    f"有效条带 {len(strips)}/{n_total}, "
+                    f"视口 {w}x{h}")
+        if strips:
+            reg = self._register(strips, a2, x1, x2, h - 60, subtract=True)
+            if reg is not None:
+                logger.info(f"[align] 条带直接命中 off={reg[0]}, "
+                            f"mean_diff={reg[1]:.2f}")
+                return reg[0]
+            logger.info(f"[align] {len(strips)} 条带全部无法达成共识(残差超限)")
+        else:
+            logger.info("[align] 所有条带均无墨迹,进入兜底流程")
+
+        # ---- 兜底 a): 按估算偏移做单点验证 ----
+        presses = self.cfg["action"].get("scan_presses", 8)
+        est_off = presses * (self.result.px_per_press if self.result
+                             and self.result.px_per_press else _PRESS_PX)
+        est_off = int(max(0, min(est_off, h - 60)))
+        if strips:
+            s, n_in = 0.0, 0
+            for y0, band, bh in [(y0, b.astype(np.int16), b.shape[0])
+                                 for y0, b in strips]:
+                ya, yb = y0 - est_off, y0 - est_off + bh
+                if 0 <= ya and yb <= a2.shape[0]:
+                    d = float(np.abs(band - a2[ya:yb, x1:x2].astype(np.int16)).mean())
+                    if d < _STRIP_MATCH_DIFF:
+                        s += d; n_in += 1
+            if n_in and (s / n_in) < _ALIGN_DIFF_LIMIT:
+                logger.info(f"条带对齐失败,兜底估算 off={est_off} "
+                            f"(n_in={n_in}) 验证通过")
+                return est_off
+
+        # ---- 兜底 b): 全帧降采样滑窗(跳过顶部固定 chrome 带) ----
+        logger.info(f"条带对齐全失败,启动全帧降采样兜底 (est_off={est_off})")
+        return self._fallback_offset(a1, a2, x1, x2, h)
+
+    def _fallback_offset(self, a1: np.ndarray, a2: np.ndarray,
+                         x1: int, x2: int, h: int) -> int | None:
+        """全帧降采样滑窗兜底对齐:把 prev/cur 灰度图按 1/4 分辨率降采样,
+        在 cur 上滑窗搜索 prev 下半部分的最小残差位置,再放大回原分辨率
+        做 ±4px 微调,验证通过才返回。比条带对齐慢但覆盖面更广,哪怕
+        所有条带都没墨迹(极稀疏内容)也能测出位移。"""
+        scale = 4
+        bh = max(6, _CHROME_H // scale)
+        # 跳过顶部 chrome 带;prev 只取下半部分(上半部分滚出视口)
+        half = (h - bh) // 2
+        sub1 = a1[bh + half:h, x1:x2]
+        sub2 = a2[bh:, x1:x2]
+        src = sub1[::scale, ::scale].astype(np.float32)
+        tgt = sub2[::scale, ::scale].astype(np.float32)
+        # 全白底(src 均值>250)没有可对齐的内容,直接放弃
+        if src.mean() > 250:
             return None
-        reg = self._register(strips, a2, x1, x2, h - 60, subtract=True)
-        return None if reg is None else reg[0]
+        sh, sw = src.shape
+        th = tgt.shape[0]
+        if sh < 20 or sw < 30 or th < sh + 10:
+            return None
+        max_d_off = min(h - 60, th * scale - 10)
+        best_off, best_d = -1, float("inf")
+        # 滑窗:off 含义=prev 向下滚的原像素数,src 在降采样 tgt 上出现
+        # 于 ya = (bh + half - off) // scale 处(src 是 prev[bh+half:...]
+        # 的降采样,tgt 是 cur[bh:...] 的降采样)
+        ya_base = (bh + half) // scale
+        for off in range(0, min(max_d_off + 1, (th - sh) * scale), scale * 2):
+            ya = ya_base - off // scale
+            if ya < 0 or ya + sh > th:
+                continue
+            d = float(np.abs(src - tgt[ya:ya + sh]).mean())
+            if d < best_d:
+                best_d, best_off = d, off
+        if best_off < 0:
+            return None
+        # 原分辨率微调 ±scale
+        fine_off, fine_d = best_off, best_d
+        src_sub = a1[bh + half:bh + half + half, x1:x2].astype(np.float32)
+        for delta in range(-scale, scale + 1):
+            off_try = best_off + delta
+            if not (0 <= off_try <= h - 60):
+                continue
+            ya = bh + half - off_try
+            yb = ya + half
+            if ya < 0 or yb > a2.shape[0]:
+                continue
+            d = float(np.abs(
+                src_sub - a2[ya:yb, x1:x2].astype(np.float32)).mean())
+            if d < fine_d:
+                fine_d, fine_off = d, off_try
+        if fine_d < _ALIGN_DIFF_LIMIT + 6:
+            logger.info(f"全帧兜底对齐成功 off={fine_off}, "
+                        f"mean_diff={fine_d:.2f}")
+            return fine_off
+        logger.info(f"全帧兜底对齐失败 mean_diff={fine_d:.2f}")
+        return None
 
     def current_offset(self, img: Image.Image) -> int:
         """把当前视口对齐到长图,返回当前滚动偏移(无法对齐返回 -1)。
@@ -373,7 +498,20 @@ class PageScanner:
             if presses > 0:
                 self.input.arrow_down(presses)
             else:
-                self.input.arrow_up(-presses)
+                # 向上回卷:比较"逐键↑"与"Home跳顶+向下微调"的按键数,
+                # 取更省的路径。整页扫描结束在页底,回第一题作答时
+                # 逐键↑需 300+ 次(每键~0.1s,耗时 40s+),Home 一步到顶
+                # 后通常只需几键向下微调。
+                presses_up = -presses
+                presses_via_home = int(round(
+                    target / (res.px_per_press or _PRESS_PX)))
+                if presses_via_home + 5 < presses_up:
+                    logger.info(f"回卷距离大(↑×{presses_up}),"
+                                f"改用 Home 跳顶+向下×{presses_via_home}")
+                    self.input.press_home()
+                    time.sleep(self.cfg["action"].get("page_wait", 1.0))
+                else:
+                    self.input.arrow_up(presses_up)
             time.sleep(settle)
         final = self.current_offset(self.window.screenshot())
         return final if final >= 0 else measured

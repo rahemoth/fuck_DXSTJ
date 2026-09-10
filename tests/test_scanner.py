@@ -69,8 +69,15 @@ class FakeInput:
         self.dry_run = False
         self.presses: list[int] = []    # 正=↓次数,负=↑次数
         self.clicks: list[str] = []       # click_options 记录(dry-run 验证)
+        self.homes = 0                    # press_home 调用次数
+
+    def _safe_click_column(self) -> int | None:
+        """测试替身:不做真实侧边栏探测,返回 None 让 scanner 走
+        content_band 的兜底 x1 = max(w*0.1, region[0]+40) 分支"""
+        return None
 
     def press_home(self):
+        self.homes += 1
         self.window.scroll = 0
 
     def arrow_down(self, times=10):
@@ -228,6 +235,44 @@ def test_scroll_to_home_target():
     off = s.scroll_to(0)
     assert off <= 4
     assert window.scroll == 0
+
+
+def test_scroll_to_long_upward_uses_home_shortcut():
+    """整页扫描结束停在页底,回第一题作答(target 小但 >20):
+    回卷距离大时应走 Home 跳顶 + 向下微调,而不是逐键↑ 300+ 次。
+    注意:scan() 自身也会按 Home/↓,断言只看 scroll_to 之后的增量。"""
+    s, window = make_scanner()
+    res = s.scan()
+    window.scroll = res.max_offset          # 页底(1000)
+    inp = s.input
+    homes0, npress0 = inp.homes, len(inp.presses)
+    off = s.scroll_to(100)
+    delta = inp.presses[npress0:]
+    # Home 被用过,且没有逐键↑(负增量)
+    assert inp.homes - homes0 >= 1, "长距离回卷应触发 Home"
+    assert all(p > 0 for p in delta), f"不应逐键↑: {delta}"
+    # 增量按键数远小于逐键↑路径(1000-100)/40 ≈ 22 次
+    assert sum(abs(p) for p in delta) < 10
+    # 落点仍在容差内(点击坐标由实测偏移换算,精度不受影响)
+    assert abs(off - 100) <= 30
+    assert abs(window.scroll - 100) <= 30
+
+
+def test_scroll_to_short_upward_keeps_arrow_up():
+    """回卷距离小(逐键↑更省)时不应绕路 Home:
+    scroll=300 → target=200,逐键↑×2 优于 Home+↓×5。
+    注意:scan() 自身也会按 Home,断言只看 scroll_to 之后的增量。"""
+    s, window = make_scanner()
+    s.scan()
+    window.scroll = 300
+    inp = s.input
+    homes0, npress0 = inp.homes, len(inp.presses)
+    off = s.scroll_to(200)
+    delta = inp.presses[npress0:]
+    assert inp.homes - homes0 == 0, "短距离回卷不应触发 Home"
+    assert any(p < 0 for p in delta), f"应逐键↑: {delta}"
+    assert abs(off - 200) <= 30
+    assert abs(window.scroll - 200) <= 30
 
 
 # ---------------- 长图 → 视口坐标换算 ----------------

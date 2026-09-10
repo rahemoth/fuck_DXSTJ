@@ -6,9 +6,11 @@
 所有点击带随机延时,防检测。
 """
 import ctypes
+import json
 import random
 import time
 from contextlib import contextmanager
+from pathlib import Path
 
 import pyautogui
 
@@ -16,6 +18,17 @@ from core.controller.window import WindowCapture
 from core.log import get_logger
 
 logger = get_logger("controller.input")
+
+
+def _load_roi_cfg() -> dict:
+    """读取布局标定配置 roi.json(与 locator 共用同一文件)"""
+    path = Path(__file__).resolve().parent.parent / "resource" / "roi.json"
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        logger.warning(f"读取 roi.json 失败({e}),焦点列将用内置默认值")
+        return {}
 
 # 防止 pyautogui 触发 FailSafeException 中断(鼠标移到角落时停止)
 pyautogui.FAILSAFE = False
@@ -73,6 +86,9 @@ class InputController:
         self.dry_run = action_cfg.get("dry_run", True)
         self._home: tuple[int, int] | None = None   # 鼠标复位点(执行开始时的位置)
         self._in_action = False                     # 嵌套动作标记(仅最外层复位)
+        self._roi_cfg = _load_roi_cfg()             # 布局标定配置(focus_click_x 回退值)
+        self._safe_column: int | None = None        # 焦点安全列缓存(客户区 x)
+        self._safe_column_w: int | None = None      # 探测时的客户区宽(变化需重探)
 
     # ---------- 鼠标复位 ----------
 
@@ -173,15 +189,104 @@ class InputController:
     def _focus_content(self):
         """点击内容区空白列建立键盘焦点(方向键/Home 作用于此前的
         焦点元素,需先点空白处把焦点落到页面上)。
-        焦点点击列:导航图标 x≤53,内容列缩窗时从 x≈102 起(字母圈 114~127),
-        全屏时从 x≈435 起。x=70 在两种窗口宽度下都是空白,勿改回 120
-        (120 会压缩窗字母圈列,radio 下误点即切换已选答案)。"""
+        空白列不硬编码:动态探测深蓝侧边栏右缘,点击其右侧的页面左内边距
+        (不同分辨率/DPI/窗口宽度下侧边栏物理宽度不同,固定 x=70 在部分
+        机器上会落到侧边栏图标上,误点跳转页面、方向键滚动失效)。"""
         self.window.bring_to_front()
         time.sleep(0.1)
+        col = self._safe_click_column()
         l, t, r, b = self.window.client_rect_screen()
-        sx, sy = self.window.client_to_screen(70, (b - t) // 2)
+        sx, sy = self.window.client_to_screen(col, (b - t) // 2)
         pyautogui.click(sx, sy)
         time.sleep(0.15)
+
+    def _safe_click_column(self) -> int:
+        """返回建立焦点用的安全空白列(客户区 x)。
+        优先动态探测,失败回退 roi.json 的 focus_click_x(默认 70)。
+        结果按客户区宽度缓存:宽度不变时整个运行期复用(侧边栏宽度
+        会话内不变),窗口被拉宽/缩窄时重新探测。"""
+        try:
+            l, t, r, b = self.window.client_rect_screen()
+            width = r - l
+        except Exception:
+            return int(self._roi_cfg.get("focus_click_x", 70))
+        if self._safe_column is not None and self._safe_column_w == width:
+            return self._safe_column
+        col = self._detect_safe_column()
+        if col is None:
+            col = int(self._roi_cfg.get("focus_click_x", 70))
+            logger.info(f"侧边栏动态探测未生效,焦点列回退配置 x={col}")
+        self._safe_column = col
+        self._safe_column_w = width
+        return col
+
+    def _detect_safe_column(self) -> int | None:
+        """动态探测安全空白列:深蓝侧边栏右缘右侧的页面左内边距。
+        1) 侧边栏右缘:从 x=0 连续延伸的深蓝竖带(列内多数像素深蓝,
+           允许 ≤3px 边框/抗锯齿噪声),右缘=最后一个深蓝列+1
+        2) 内容首列:右缘后第一个"持续有墨"的列(整列暗像素≥8且连续
+           3列,过滤单列渲染噪声),即题干/字母圈等内容的左界
+        3) 空白列=右缘+偏移:紧贴侧边栏的页面左内边距在所有版式下均
+           为空白(压缩窗 48px/全屏更宽),偏移不超过与内容首列的
+           中点、上限 20px,避免误触选项字母圈(radio 误点即改答案)
+        探测失败(无深蓝侧边栏/截图异常/结果越界)返回 None。"""
+        try:
+            import numpy as np
+
+            img = self.window.screenshot()
+            arr = np.asarray(img.convert("RGB"), dtype=np.int16)
+            h, w = arr.shape[:2]
+            if w < 60 or h < 120:
+                return None
+            # 垂直条带去掉顶底各5%(避开窗口边缘/边框线渲染差异)
+            band = arr[int(h * 0.05):int(h * 0.95)]
+            # --- 1) 侧边栏右缘 ---
+            scan_w = min(w, int(w * 0.4))
+            sub = band[:, :scan_w]
+            blue = ((sub[:, :, 2] > 60) & (sub[:, :, 2] - sub[:, :, 0] > 20)
+                    & (sub[:, :, 2] - sub[:, :, 1] > 8))
+            col_blue = blue.mean(axis=0)
+            edge, miss = 0, 0
+            for x in range(scan_w):
+                if col_blue[x] > 0.55:
+                    edge, miss = x + 1, 0
+                else:
+                    miss += 1
+                    if miss > 3:
+                        break        # 连续4列非深蓝:侧边栏结束
+            if edge < 10:
+                logger.debug("未检出深蓝侧边栏,无法锚定空白列")
+                return None
+            # --- 2) 内容首列(跳过侧边栏右缘的抗锯齿过渡带) ---
+            x0, x1 = min(edge + 8, w), min(w, edge + 400)
+            seg = band[:, x0:x1]
+            if seg.shape[1] < 8:
+                return None
+            # 页面底色近白(三通道最小值高),文字/字母圈为深色
+            ink = (seg.min(axis=2) < 180)
+            col_ink = ink.sum(axis=0)
+            text_left = None
+            run = 0
+            for x in range(seg.shape[1]):
+                if col_ink[x] >= 8:
+                    run += 1
+                    if run >= 3:
+                        text_left = x0 + x - 2
+                        break
+                else:
+                    run = 0
+            # --- 3) 空白列 ---
+            offset = 20 if text_left is None else \
+                min(20, max(4, (text_left - edge) // 2))
+            col = edge + offset
+            if not (edge + 2 <= col < w * 0.45):
+                return None
+            logger.info(f"探测到侧边栏右缘 x={edge},内容首列 "
+                        f"x={text_left},焦点安全列 x={col}")
+            return col
+        except Exception as e:
+            logger.warning(f"焦点安全列探测异常: {e}")
+            return None
 
     def arrow_down(self, times: int = 10):
         """按方向键↓滚动(导航与微滚统一入口)。
@@ -221,12 +326,13 @@ class InputController:
             logger.info(f"[dry-run] 跳过滚动 {clicks} 格")
             return
         with self._cursor_guard():
-            l, t, r, b = self.window.client_rect_screen()
             self.window.bring_to_front()
             time.sleep(0.2)
-            # moveTo 到安全空白列 x=70(同 arrow_down 注释):悬停在选项文本上
-            # 的 hover 高亮会污染选中检测的蓝像素统计
-            sx, sy = self.window.client_to_screen(70, (b - t) // 2)
+            # moveTo 到侧边栏右侧的安全空白列(同 _focus_content):悬停在
+            # 选项文本上的 hover 高亮会污染选中检测的蓝像素统计
+            col = self._safe_click_column()
+            l, t, r, b = self.window.client_rect_screen()
+            sx, sy = self.window.client_to_screen(col, (b - t) // 2)
             pyautogui.moveTo(sx, sy)
             time.sleep(0.15)
             step = 1 if clicks >= 0 else -1
