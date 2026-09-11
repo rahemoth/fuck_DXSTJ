@@ -125,7 +125,7 @@ class ConfigDialog(MessageBoxBase):
             "开启=整页扫描后批量作答(页面不适合时自动回退逐题);"
             "关闭=逐题识别作答(旧模式)", parent=g2)
         self.batch_mode.setChecked(
-            cfg["action"].get("answer_mode", "long_screenshot") != "per_question")
+            cfg["action"]["answer_mode"] != "per_question")
         _localize_switch(self.batch_mode)
         g2.addSettingCard(self.batch_mode)
 
@@ -148,7 +148,7 @@ class ConfigDialog(MessageBoxBase):
         self.default_browser.addItem("(未选择)", userData="")
         self.default_browser.addItem("Edge", userData="edge")
         self.default_browser.addItem("Chrome", userData="chrome")
-        saved_browser = cfg.get("web", {}).get("default_browser", "")
+        saved_browser = cfg["web"]["default_browser"]
         idx = self.default_browser.findData(saved_browser)
         self.default_browser.setCurrentIndex(idx if idx >= 0 else 0)
         self._add_card(g4, FIF.GLOBE, "默认浏览器",
@@ -156,13 +156,13 @@ class ConfigDialog(MessageBoxBase):
 
         self.cdp_port = SpinBox()
         self.cdp_port.setRange(1024, 65535)
-        self.cdp_port.setValue(int(cfg.get("web", {}).get("cdp_port", 9222)))
+        self.cdp_port.setValue(int(cfg["web"]["cdp_port"]))
         self._add_card(g4, FIF.CODE, "调试端口", "专用浏览器 CDP 调试端口", self.cdp_port)
 
         self.launch_browser = SwitchSettingCard(
             FIF.SPEED_HIGH, "插件模式自动拉起专用浏览器",
             "取消勾选则使用日常浏览器(需手动装一次插件)", parent=g4)
-        self.launch_browser.setChecked(cfg.get("web", {}).get("launch_browser", True))
+        self.launch_browser.setChecked(cfg["web"]["launch_browser"])
         _localize_switch(self.launch_browser)
         g4.addSettingCard(self.launch_browser)
         vbox.addWidget(g4)
@@ -173,7 +173,7 @@ class ConfigDialog(MessageBoxBase):
         self.theme_combo.addItem("深色模式", userData="dark")
         self.theme_combo.addItem("浅色模式", userData="light")
         self.theme_combo.addItem("跟随系统", userData="auto")
-        saved_theme = str(cfg.get("ui", {}).get("theme", "dark")).lower()
+        saved_theme = str(cfg["ui"]["theme"]).lower()
         idx = self.theme_combo.findData(saved_theme)
         self.theme_combo.setCurrentIndex(idx if idx >= 0 else 0)
         self._add_card(g5, FIF.BRUSH, "主题模式", "深色 / 浅色 / 跟随系统,选择后立即生效", self.theme_combo)
@@ -226,7 +226,7 @@ class ConfigDialog(MessageBoxBase):
             "base_url": self.base_url.text().strip(),
             "api_key": self.api_key.text().strip(),
             "model": self.model.text().strip(),
-            "temperature": self.cfg["llm"].get("temperature", 0.1),
+            "temperature": self.cfg["llm"]["temperature"],
             "timeout": 15,
         }
 

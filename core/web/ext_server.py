@@ -29,7 +29,7 @@ class ExtBridge:
         self.enabled = threading.Event()
         self._solver_lock = threading.Lock()
         self.solver = Solver(LLMClient(cfg["llm"]),
-                             max_retries=cfg["llm"].get("max_retries", 1))
+                             max_retries=cfg["llm"]["max_retries"])
         self.done_count = 0
         self.fail_count = 0
         self._done = threading.Event()
@@ -37,13 +37,11 @@ class ExtBridge:
     # ---------- 插件请求的业务处理 ----------
 
     def config(self) -> dict:
-        action = self.cfg["action"]
-        web = self.cfg.get("web") or {}
         return {
             "enabled": self.enabled.is_set(),
-            "dry_run": action.get("dry_run", False),
-            "q_delay": web.get("q_delay", [3, 8]),
-            "opt_delay": web.get("opt_delay", [0.5, 1.5]),
+            "dry_run": self.cfg["action"]["dry_run"],
+            "q_delay": self.cfg["web"]["q_delay"],
+            "opt_delay": self.cfg["web"]["opt_delay"],
         }
 
     def solve(self, payload: dict) -> dict:

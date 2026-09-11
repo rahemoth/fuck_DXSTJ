@@ -88,7 +88,7 @@ def apply_theme(app) -> None:
 
     from core.config import Config
 
-    mode = str(Config.get().data.get("ui", {}).get("theme", "dark")).lower()
+    mode = str(Config.get()["ui"]["theme"]).lower()
     theme = {"dark": Theme.DARK, "light": Theme.LIGHT}.get(mode, Theme.AUTO)
     setTheme(theme)
     setThemeColor(ACCENT_HEX)

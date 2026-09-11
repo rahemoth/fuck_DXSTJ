@@ -20,7 +20,7 @@ def main():
     img = w.screenshot()
     arr = np.asarray(img.convert("RGB"), dtype=np.int16)
     ocr = OcrEngine(cfg["ocr"]["confidence_threshold"])
-    loc = QuestionLocator()
+    loc = QuestionLocator(cfg["roi"])
     for q in loc.locate_all(ocr.run(img), img.size[1]):
         print(f"--- 题{q.number} [{q.qtype}] stem={q.stem[:20]!r}")
         for label, (cx, cy) in q.option_centers.items():

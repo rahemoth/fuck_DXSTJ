@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-调试工具:dump 学习通窗口的 OCR 全量结果,用于标定 roi.json 锚点。
+调试工具:dump 学习通窗口的 OCR 全量结果,用于标定 config.yaml 的 roi 节锚点。
 
 用法:
     python tools/dump_ocr.py             # 打印 OCR 文本块
@@ -51,7 +51,7 @@ def main():
               f"conf={b.confidence:.2f}  {b.text}")
 
     if parse:
-        locator = QuestionLocator()
+        locator = QuestionLocator(cfg["roi"])
         questions = locator.locate_all(blocks)
         print(f"\n{'='*70}\n题目解析结果({len(questions)} 题):\n{'='*70}")
         for q in questions:

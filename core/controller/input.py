@@ -6,29 +6,17 @@
 所有点击带随机延时,防检测。
 """
 import ctypes
-import json
 import random
 import time
 from contextlib import contextmanager
-from pathlib import Path
 
 import pyautogui
 
+from core.config import DEFAULT_CONFIG
 from core.controller.window import WindowCapture
 from core.log import get_logger
 
 logger = get_logger("controller.input")
-
-
-def _load_roi_cfg() -> dict:
-    """读取布局标定配置 roi.json(与 locator 共用同一文件)"""
-    path = Path(__file__).resolve().parent.parent / "resource" / "roi.json"
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception as e:
-        logger.warning(f"读取 roi.json 失败({e}),焦点列将用内置默认值")
-        return {}
 
 # 防止 pyautogui 触发 FailSafeException 中断(鼠标移到角落时停止)
 pyautogui.FAILSAFE = False
@@ -80,13 +68,15 @@ def _send_unicode_key(ch: str):
 
 
 class InputController:
-    def __init__(self, window: WindowCapture, action_cfg: dict):
+    def __init__(self, window: WindowCapture, action_cfg: dict,
+                 roi_cfg: dict | None = None):
         self.window = window
         self.cfg = action_cfg
-        self.dry_run = action_cfg.get("dry_run", True)
+        self.dry_run = action_cfg["dry_run"]
         self._home: tuple[int, int] | None = None   # 鼠标复位点(执行开始时的位置)
         self._in_action = False                     # 嵌套动作标记(仅最外层复位)
-        self._roi_cfg = _load_roi_cfg()             # 布局标定配置(focus_click_x 回退值)
+        # 布局标定(config.yaml 的 roi 节,执行器注入;零参回退内置 schema)
+        self._roi_cfg = roi_cfg if roi_cfg is not None else DEFAULT_CONFIG["roi"]
         self._safe_column: int | None = None        # 焦点安全列缓存(客户区 x)
         self._safe_column_w: int | None = None      # 探测时的客户区宽(变化需重探)
 
@@ -154,7 +144,7 @@ class InputController:
     def click_client(self, x: int, y: int, label: str = "", delay: bool = True):
         """点击客户区坐标(x, y 为截图坐标系)"""
         if delay:
-            self._sleep(self.cfg.get("click_delay", [0.8, 1.8]))
+            self._sleep(self.cfg["click_delay"])
         with self._cursor_guard():
             sx, sy = self.window.client_to_screen(int(x), int(y))
             self._click_screen(sx, sy, label)
@@ -167,7 +157,7 @@ class InputController:
                     logger.warning(f"选项 {label} 无坐标,跳过")
                     continue
                 if i > 0:
-                    self._sleep(self.cfg.get("option_interval", [0.3, 0.6]))
+                    self._sleep(self.cfg["option_interval"])
                 x, y = option_centers[label]
                 self.click_client(x, y, label=f"选项{label}", delay=False)
 
@@ -184,7 +174,7 @@ class InputController:
 
     def wait_next_page(self):
         """点击'下一题'后的等待"""
-        self._sleep(self.cfg.get("next_delay", [1.0, 2.0]))
+        self._sleep(self.cfg["next_delay"])
 
     def _focus_content(self):
         """点击内容区空白列建立键盘焦点(方向键/Home 作用于此前的
@@ -202,19 +192,19 @@ class InputController:
 
     def _safe_click_column(self) -> int:
         """返回建立焦点用的安全空白列(客户区 x)。
-        优先动态探测,失败回退 roi.json 的 focus_click_x(默认 70)。
+        优先动态探测,失败回退配置 roi.focus_click_x(默认 70)。
         结果按客户区宽度缓存:宽度不变时整个运行期复用(侧边栏宽度
         会话内不变),窗口被拉宽/缩窄时重新探测。"""
         try:
             l, t, r, b = self.window.client_rect_screen()
             width = r - l
         except Exception:
-            return int(self._roi_cfg.get("focus_click_x", 70))
+            return int(self._roi_cfg["focus_click_x"])
         if self._safe_column is not None and self._safe_column_w == width:
             return self._safe_column
         col = self._detect_safe_column()
         if col is None:
-            col = int(self._roi_cfg.get("focus_click_x", 70))
+            col = int(self._roi_cfg["focus_click_x"])
             logger.info(f"侧边栏动态探测未生效,焦点列回退配置 x={col}")
         self._safe_column = col
         self._safe_column_w = width

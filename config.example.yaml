@@ -1,3 +1,7 @@
+# ===================== 学习通自动做题工具 配置文件 =====================
+# 复制本文件为 config.yaml 后修改。config.yaml 是程序唯一读取的运行配置,
+# 缺失的键由程序内置 schema 补齐并在启动时校验,非法值会直接报错提示。
+
 window:
   title_keywords:
   - 学习通            # 学习通PC客户端窗口标题关键词
@@ -7,37 +11,41 @@ llm:
   base_url: https://api.deepseek.com/v1   # OpenAI 兼容 API 地址
   api_key: sk-xxxx                       # 你的 API key
   model: deepseek-chat
-  temperature: 0.1
-  timeout: 60
-  max_retries: 1
-  concurrency: 4              # LLM 并发求解线程数(批量模式整页扫描后并发取回全部答案);
-                              # 过高并发可能触发 API 网关限流,如遇限流/超时可下调
+  temperature: 0.1                       # [0,2],越低越确定
+  timeout: 60                            # 单次请求超时(秒);硬超时为其 3 倍
+  max_retries: 1                         # 单题失败重试次数
+  concurrency: 1                         # LLM 并发求解线程数(批量模式整页扫描后并发取回答案);
+                                         # 过高并发可能触发限流,如遇限流/超时可下调
 
 action:
   dry_run: true           # true=只模拟不真实点击(首次测试建议开启)
-  answer_mode: long_screenshot   # 做题模式:long_screenshot=整页长图扫描批量作答
+  answer_mode: long_screenshot   # long_screenshot=整页长图扫描批量作答
                                  # (页面不适合时自动回退逐题);per_question=逐题识别作答
-  click_delay:
+  click_delay:            # 点击前随机延时 [最小,最大] 秒(防检测)
   - 0.8
   - 1.8
-  option_interval:
+  option_interval:        # 多选题选项间随机延时 [最小,最大] 秒
   - 0.3
   - 0.6
-  page_wait: 1.0              # 导航/Home 跳转后等待页面稳定(秒)
-  scan_settle: 0.7            # 整页扫描相邻帧滚动后的等待(秒)
-  scan_step_ratio: 0.7        # 整页扫描每帧步长(占视口高比例,0.7 屏≈480px);
-                              # 实际步长还受条带可见性/拼接覆盖自动截断
-                              # (0.77 屏高-顶栏、0.63 屏高),过大会回退小步
-  fine_scroll_wait: 0.6        # 方向键↓微滚后等待页面稳定(秒)
-  verify_wait: 0.6             # 点击选项后等待选中高亮生效(秒),再截图验证
+  next_delay:             # 点"下一题"后随机延时 [最小,最大] 秒
+  - 1.0
+  - 2.0
+  page_wait: 1.0          # 导航/Home 跳转后等待页面稳定(秒)
+  scan_step_ratio: 0.7    # 整页扫描每帧步长(占视口高比例);实际步长还受
+                          # 条带可见性/拼接覆盖自动截断,过大会自动回退小步
+  scan_settle: 0.7        # 整页扫描相邻帧滚动后的等待(秒)
+  max_scan_frames: 120    # 扫描帧数安全上限(≈50+ 题页面;超长页面可调大)
+  fine_scroll_steps: 3    # 方向键↓微滚每次按键数(每键滚 40px)
+  fine_scroll_wait: 0.6   # 微滚后等待页面稳定(秒)
+  verify_wait: 0.6        # 点击选项后等待选中高亮生效(秒),再截图验证
 
 ocr:
-  confidence_threshold: 0.55
+  confidence_threshold: 0.55   # OCR 置信度阈值 (0,1]
   retry_threshold: 0.3         # 页面识别不完整时降阈值重识别(单字符选项易漏检)
 
 web:                            # 网页版模式(GUI 顶部下拉切换)
-  default_browser: ''           # 默认浏览器(edge/chrome),必选;程序将拉起该浏览器的专用实例
-  cdp_port: 9222                # 专用浏览器调试端口(独立配置,不影响日常浏览器)
+  default_browser: ''           # '' 未选择 / edge / chrome;程序拉起该浏览器的专用实例
+  cdp_port: 9222                # 专用浏览器调试端口(1024-65535,独立配置不影响日常浏览器)
   ext_bridge_port: 9876         # 插件模式本地桥 HTTP 端口
   launch_browser: true          # 插件模式自动拉起带插件的专用浏览器;
                                 # false=用日常浏览器(需手动装一次插件:扩展页开
@@ -53,9 +61,77 @@ web:                            # 网页版模式(GUI 顶部下拉切换)
   - 0.5
   - 1.5
 
+ui:
+  theme: dark                   # dark / light / auto(跟随系统)
+
 log:
   save_to_file: true
-  dir: logs
+  dir: logs                     # 日志目录(相对项目根)
 
-ui:                             # 界面主题
-  theme: dark                   # dark / light / auto(跟随系统)
+# ---- 布局几何标定(学习通 PC 客户端 1080×1920 窗口;UI 改版只调本节) ----
+roi:
+  content_region:               # 有效内容区 [x1, y1, x2, y2](滤掉侧栏/答题卡)
+  - 100
+  - 0
+  - 1000
+  - 99999
+  answer_card_width: 190        # 右侧答题卡宽度(px)
+  option_indent: 30             # 选项相对题干的缩进阈值
+  option_max_offset_x: 250      # 选项中心允许的最大横向偏移
+  option_line_gap: 35           # 同选项换行间距上限
+  option_row_gap: 49            # 相邻选项行间距
+  stem_option_gap: 110          # 题干底部到首选项的最小间距(据此切分题干)
+  bottom_margin: 60             # 贴近视口该底边距时判定需要滚动
+  option_labels:                # 选项标签序列
+  - A
+  - B
+  - C
+  - D
+  - E
+  - F
+  judge_options:                # 判断题选项文本归一化
+    'true':
+    - 对
+    - 正确
+    - '√'
+    - T
+    'false':
+    - 错
+    - 错误
+    - '×'
+    - F
+  next_button:                  # "下一题"按钮匹配文本
+  - 下一题
+  - 下一页
+  - 下题
+  submit_button:                # "提交"按钮匹配文本
+  - 提交
+  ignore_blocks:                # OCR 含这些文本的块直接忽略
+  - 学习通
+  - 正确答案
+  - 我的答案
+  - 解析
+  - 得分
+  - 收藏
+  - 答题卡
+  - 全屏
+  - 暂时保存
+  blank_click_dx: 100           # 填空题点击点相对空白区域左缘偏移
+  blank_region_width: 500       # 填空输入区域识别宽度
+  short_answer_click:           # 简答题点击坐标偏移 [dx, dy]
+  - 260
+  - 145
+  toolbar_indent: 25            # 工具条缩进阈值
+  focus_click_x: 70             # 建立键盘焦点的内容区空白列 x(动态探测失败时回退)
+
+# ---- 预留:网课助手(功能未上线,可提前配置;不参与校验) ----
+# course:
+#   enabled: true
+#   playback_rate: 1.0
+#   volume: 0
+#   mode: next
+#   restudy: false
+#   force_learn: false
+#   video_quiz_strategy: random
+#   enable_ppt: true
+#   enable_hyperlink: true

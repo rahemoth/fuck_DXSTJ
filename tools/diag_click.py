@@ -20,9 +20,9 @@ win.find()
 win.bring_to_front()
 time.sleep(0.5)
 
-ocr = OcrEngine()
-loc = QuestionLocator()
-inp = InputController(win, cfg["action"])
+ocr = OcrEngine(cfg["ocr"]["confidence_threshold"])
+loc = QuestionLocator(cfg["roi"])
+inp = InputController(win, cfg["action"], cfg["roi"])
 
 qs = loc.locate_all(ocr.run(win.screenshot()))
 answerable = [q for q in qs if q.is_answerable]

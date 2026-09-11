@@ -65,10 +65,10 @@ class Executor:
         self.window = WindowCapture(cfg["window"]["title_keywords"],
                                     cfg["window"]["capture_method"])
         self.ocr = OcrEngine(cfg["ocr"]["confidence_threshold"])
-        self.locator = QuestionLocator()
-        self.input = InputController(self.window, cfg["action"])
+        self.locator = QuestionLocator(cfg["roi"])
+        self.input = InputController(self.window, cfg["action"], cfg["roi"])
         self.llm = LLMClient(cfg["llm"])
-        self.solver = Solver(self.llm, max_retries=cfg["llm"].get("max_retries", 1))
+        self.solver = Solver(self.llm, max_retries=cfg["llm"]["max_retries"])
         self.scanner = None                 # 批量模式整页扫描器(懒建)
 
         # 统计与状态
@@ -103,7 +103,7 @@ class Executor:
             self.input.set_home()   # 记录鼠标起始位置,每个动作后复位到此
             # 做题模式:per_question=逐题识别作答(旧模式);
             # long_screenshot=整页长图扫描批量作答,页面不适合时自动回退逐题
-            mode = self.cfg["action"].get("answer_mode", "long_screenshot")
+            mode = self.cfg["action"]["answer_mode"]
             if mode == "per_question":
                 logger.info("做题模式:逐题识别作答")
                 self._loop()
@@ -207,7 +207,7 @@ class Executor:
     def _solve_all(self, questions: list[Question]) -> dict[str, object]:
         """并发调用 LLM 求解全部题目,返回 {题干key: 答案}。
         单题异常记 None(作答阶段按失败计)。"""
-        workers = int(self.cfg["llm"].get("concurrency", 1))
+        workers = int(self.cfg["llm"]["concurrency"])
         answers: dict[str, object] = {}
 
         def solve_one(q: Question):
@@ -345,7 +345,7 @@ class Executor:
         if target is None and partial is not None:
             # 单字符选项(单个数字/字母圈)体积极小,OCR置信度低易整块漏检
             # (实测Q6选项全为单个数字时0.55阈值下全丢),降阈值对同一截图重识别
-            blocks = self.ocr.run(img, threshold=self.cfg["ocr"].get("retry_threshold", 0.3))
+            blocks = self.ocr.run(img, threshold=self.cfg["ocr"]["retry_threshold"])
             questions = self.locator.locate_all(blocks, img.size[1], img.size[0])
             target, partial = self._pick_target(questions)
 
@@ -431,7 +431,7 @@ class Executor:
         band = img.crop((x1, y1, x2, y2))
         band = band.resize((band.size[0] * scale, band.size[1] * scale),
                            Image.LANCZOS)
-        band_blocks = self.ocr.run(band, threshold=self.cfg["ocr"].get("retry_threshold", 0.3))
+        band_blocks = self.ocr.run(band, threshold=self.cfg["ocr"]["retry_threshold"])
         if not band_blocks:
             return None
         from core.vision.ocr import OcrBlock
@@ -520,10 +520,10 @@ class Executor:
             text = answers[i]
             for attempt in range(2):
                 self.input.click_client(cx, cy, label=f"题目{num} 第{blank['index']}空")
-                time.sleep(self.cfg["action"].get("verify_wait", 0.6))
+                time.sleep(self.cfg["action"]["verify_wait"])
                 self.input.select_all()
                 self.input.type_text(text)
-                time.sleep(self.cfg["action"].get("verify_wait", 0.6))
+                time.sleep(self.cfg["action"]["verify_wait"])
                 if self.input.dry_run:
                     break
                 got = self._ocr_region(blank["region"])
@@ -549,10 +549,10 @@ class Executor:
         region = (cx - 150, cy - 65, cx + 350, cy + 80)
         for attempt in range(2):
             self.input.click_client(cx, cy, label=f"题目{num} 简答编辑器")
-            time.sleep(self.cfg["action"].get("verify_wait", 0.6))
+            time.sleep(self.cfg["action"]["verify_wait"])
             self.input.select_all()
             self.input.type_text(text)
-            time.sleep(self.cfg["action"].get("verify_wait", 0.6))
+            time.sleep(self.cfg["action"]["verify_wait"])
             if self.input.dry_run:
                 return True
             got = self._ocr_region(region)
@@ -579,7 +579,7 @@ class Executor:
             crop = crop.resize((crop.size[0] * scale, crop.size[1] * scale),
                                Image.LANCZOS)
         blocks = self.ocr.run(crop,
-                             threshold=self.cfg["ocr"].get("retry_threshold", 0.3))
+                             threshold=self.cfg["ocr"]["retry_threshold"])
         blocks = sorted(blocks, key=lambda b: (b.box[1], b.box[0]))
         return "".join(b.text.strip() for b in blocks).strip()
 
@@ -607,11 +607,11 @@ class Executor:
         if to_deselect:
             logger.info(f"题目{num} 非答案选项 {to_deselect} 已被选中,点击取消")
             self.input.click_options(centers, to_deselect)
-            time.sleep(self.cfg["action"].get("verify_wait", 0.6))
+            time.sleep(self.cfg["action"]["verify_wait"])
 
         if pending:
             self.input.click_options(centers, pending)
-            time.sleep(self.cfg["action"].get("verify_wait", 0.6))
+            time.sleep(self.cfg["action"]["verify_wait"])
         self.input.move_away()
         time.sleep(0.3)
 
@@ -639,10 +639,10 @@ class Executor:
                 if not only and wrong:
                     logger.info(f"题目{num} 检出误选选项 {wrong},点击取消")
                     self.input.click_options(centers, wrong)
-                    time.sleep(self.cfg["action"].get("verify_wait", 0.6))
+                    time.sleep(self.cfg["action"]["verify_wait"])
                 logger.info(f"题目{num} 选项 {unselected} 未检出选中,补点")
                 self.input.click_options(centers, unselected)
-                time.sleep(self.cfg["action"].get("verify_wait", 0.6))
+                time.sleep(self.cfg["action"]["verify_wait"])
             else:
                 time.sleep(0.8)   # 等待选中状态渲染后再复查
         logger.warning(f"题目{num} 选项 {unselected} 点击后未检出选中,请人工检查")
@@ -737,9 +737,9 @@ class Executor:
         if self._scroll_total >= _SCROLL_CAP:
             raise RuntimeError(f"滚动超过 {_SCROLL_CAP} 次仍未完成,请人工检查")
         logger.info(f"{reason},↓微滚露出选项")
-        self.input.arrow_down(int(self.cfg["action"].get("fine_scroll_steps", 3)))
+        self.input.arrow_down(int(self.cfg["action"]["fine_scroll_steps"]))
         self._scroll_total += 1
-        time.sleep(self.cfg["action"].get("fine_scroll_wait", 0.6))
+        time.sleep(self.cfg["action"]["fine_scroll_wait"])
         return "scrolled"
 
     def _do_scroll(self, reason: str, img_before=None) -> str:
@@ -753,7 +753,7 @@ class Executor:
         if self._scroll_total >= _SCROLL_CAP:
             raise RuntimeError(f"滚动超过 {_SCROLL_CAP} 次仍未完成,请人工检查")
         logger.info(reason)
-        steps = int(self.cfg["action"].get("fine_scroll_steps", 3))
+        steps = int(self.cfg["action"]["fine_scroll_steps"])
 
         # 重试前重新截图做基线(首次可能实际已滚动而检测误判)
         if self._nav_arrows(steps, img_before):
@@ -775,7 +775,7 @@ class Executor:
         """方向键↓滚动并检测页面是否移动"""
         self.input.arrow_down(steps)
         self._scroll_total += 1
-        time.sleep(self.cfg["action"].get("page_wait", 1.0))
+        time.sleep(self.cfg["action"]["page_wait"])
         if img_before is None:
             return True
         img_after = self.window.screenshot()
@@ -787,7 +787,7 @@ class Executor:
             self._swept = True
             logger.info("已翻页到底,回顶部复查是否有漏答题目")
             self.input.press_home()
-            time.sleep(self.cfg["action"].get("page_wait", 1.0))
+            time.sleep(self.cfg["action"]["page_wait"])
             self._empty_scrolls = 0
             self._partial_tries.clear()   # 让被跳过的题重新获得微滚机会
             return "scrolled"

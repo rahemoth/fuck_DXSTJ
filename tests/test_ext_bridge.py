@@ -6,14 +6,15 @@ import urllib.request
 
 import pytest
 
+from core.config import build_config
 from core.web.ext_server import ExtBridge, start_bridge_server
 
-CFG = {
+CFG = build_config({
     "llm": {"base_url": "http://x", "api_key": "k", "model": "m",
             "timeout": 5, "max_retries": 0},
     "action": {"dry_run": True},
     "web": {"q_delay": [3, 8], "opt_delay": [0.5, 1.5]},
-}
+})
 
 
 @pytest.fixture()

@@ -25,8 +25,8 @@ time.sleep(0.5)
 fg = win32gui.GetForegroundWindow()
 print(f"前台窗口: hwnd={fg} [{win32gui.GetWindowText(fg)}]  目标: hwnd={win.hwnd} [{win32gui.GetWindowText(win.hwnd)}]")
 
-ocr = OcrEngine()
-loc = QuestionLocator()
+ocr = OcrEngine(cfg["ocr"]["confidence_threshold"])
+loc = QuestionLocator(cfg["roi"])
 l, t, r, b = win.client_rect_screen()
 
 

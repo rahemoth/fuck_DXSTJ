@@ -34,7 +34,7 @@ class OcrEngine:
 
     _engine = None
 
-    def __init__(self, confidence_threshold: float = 0.55):
+    def __init__(self, confidence_threshold: float):
         self.threshold = confidence_threshold
 
     @classmethod

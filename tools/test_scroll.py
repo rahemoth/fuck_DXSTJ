@@ -36,7 +36,7 @@ def main():
     cfg = load_config()
     w = WindowCapture(cfg["window"]["title_keywords"], cfg["window"]["capture_method"])
     w.ensure_connected()
-    inp = InputController(w, cfg["action"])
+    inp = InputController(w, cfg["action"], cfg["roi"])
     for notches in (1, 1, 3):
         img1 = w.screenshot()
         a1 = np.asarray(img1.convert("L"))

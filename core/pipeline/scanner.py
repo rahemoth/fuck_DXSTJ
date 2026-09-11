@@ -38,11 +38,10 @@ from core.vision.ocr import OcrBlock, OcrEngine
 
 logger = get_logger("pipeline.scanner")
 
-# 扫描帧数默认上限(可通过配置 action.max_scan_frames 覆盖)。
+# 扫描帧数上限由配置 action.max_scan_frames 给出(默认 120,见 config.py):
 # 注意:每帧步长受单批按键上限约束(8键×40px=320px),并非 0.7 视口——
 # 732px 高视口下 40 帧仅覆盖 ~17.5 屏(12480px),超长作业页会被截断,
-# 故默认放宽到 120 帧(≈38400px+视口,足够 50+ 题的页面)
-_MAX_FRAMES_DEFAULT = 120
+# 故默认 120 帧(≈38400px+视口,足够 50+ 题的页面)
 # 单条带"良好对齐"的紧残差阈值:同位置截图 bit-exact(实测 0.000),
 # 错位条带即便白对白也 >1.5。吸顶标题/光标污染带残差常>30。
 # 用它统计每个偏移下"同时良好对齐的条带数"(内条数),多数表决:
@@ -116,18 +115,17 @@ class PageScanner:
         页面无可滚内容时循环 1 轮自然结束(单题翻页页由执行器兑底)。"""
         self._check_stop()
         self.input.press_home()                     # 回顶(内部先点内容区建焦点)
-        time.sleep(self.cfg["action"].get("page_wait", 1.0))
+        time.sleep(self.cfg["action"]["page_wait"])
         img0 = self.window.screenshot()
         w, h = img0.size          # PIL size = (宽, 高)
         frames: list[tuple[int, Image.Image]] = [(0, img0)]
         offset = 0
         ppp: float | None = None                   # 实测每按键像素
         self._ppp_live = None
-        step_ratio = float(self.cfg["action"].get("scan_step_ratio", 0.7))
-        settle = float(self.cfg["action"].get("scan_settle", 0.7))
+        step_ratio = float(self.cfg["action"]["scan_step_ratio"])
+        settle = float(self.cfg["action"]["scan_settle"])
         zero_streak = 0                            # 连续"无位移"批次数
-        max_frames = int(self.cfg["action"].get("max_scan_frames",
-                                                _MAX_FRAMES_DEFAULT))
+        max_frames = int(self.cfg["action"]["max_scan_frames"])
         # 目标步长 = step_ratio × 视口高,但受三重硬约束(保证大步长下
         # 帧间对齐仍可靠、拼接无空隙):
         # a) ≤ 0.77h - _CHROME_H:0.77/0.88 高条带滚后仍在 cur 的内容区
@@ -724,10 +722,10 @@ class PageScanner:
         if target <= 20:
             self.input.press_home()
             self._note_home()
-            time.sleep(self.cfg["action"].get("page_wait", 1.0))
+            time.sleep(self.cfg["action"]["page_wait"])
             return self.current_offset(self.window.screenshot())
 
-        settle = float(self.cfg["action"].get("scan_settle", 0.7)) * 0.7
+        settle = float(self.cfg["action"]["scan_settle"]) * 0.7
         measured = -1
         for attempt in range(4):
             self._check_stop()
@@ -757,7 +755,7 @@ class PageScanner:
                                 f"改用 Home 跳顶+向下×{presses_via_home}")
                     self.input.press_home()
                     self._note_home()
-                    time.sleep(self.cfg["action"].get("page_wait", 1.0))
+                    time.sleep(self.cfg["action"]["page_wait"])
                     # Home 后页面在顶部(偏移≈0),直接按目标距离的估算
                     # 键数下滚,免得空耗一轮测量迭代(4 轮上限内留更多
                     # 校正机会);真实落点仍由下一轮 current_offset 实测

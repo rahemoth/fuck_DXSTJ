@@ -22,6 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from PIL import Image, ImageDraw
 
+from core.config import build_config
 from core.pipeline.scanner import PageScanner
 from core.vision.locator import Question, QuestionLocator
 from core.vision.ocr import OcrBlock
@@ -115,8 +116,9 @@ class FakeOcr:
 
 
 def make_scanner(cfg=None):
-    cfg = cfg or {"action": {"page_wait": 0, "scan_step_ratio": 0.7,
-                             "scan_settle": 0}}
+    cfg = cfg or build_config({
+        "action": {"page_wait": 0, "scan_step_ratio": 0.7, "scan_settle": 0},
+    })
     window = FakeWindow()
     return PageScanner(window, FakeOcr(), QuestionLocator(),
                        FakeInput(window, cfg), cfg), window
@@ -414,14 +416,14 @@ class BatchFlowHarness:
     scanner 由 _run_batch 内部用这些 fake 真实构建(完整走批量流程)。"""
 
     def __init__(self):
-        self.cfg = {
+        self.cfg = build_config({
             "window": {"title_keywords": ["x"], "capture_method": "printwindow"},
             "ocr": {"confidence_threshold": 0.55, "retry_threshold": 0.3},
             "llm": {"base_url": "http://localhost:1", "api_key": "k",
                     "model": "m", "timeout": 5, "max_retries": 0,
                     "concurrency": 1},
             "action": {"dry_run": True, "verify_wait": 0},
-        }
+        })
         self.window = FakeWindow()
         self.ocr = FakeOcr()
 

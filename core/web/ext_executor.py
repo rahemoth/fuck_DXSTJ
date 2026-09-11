@@ -30,7 +30,7 @@ class ExtensionExecutor:
 
     def __init__(self, cfg: dict, emit=None):
         self.cfg = cfg
-        self.web_cfg = cfg.get("web") or {}
+        self.web_cfg = cfg["web"]
         self.emit = emit or (lambda e: None)
         self._stop = threading.Event()
         self.bridge = ExtBridge(cfg, emit=self._emit)
@@ -53,11 +53,11 @@ class ExtensionExecutor:
         server = None
         try:
             self._check_stop()
-            port = self.web_cfg.get("ext_bridge_port", 9876)
+            port = self.web_cfg["ext_bridge_port"]
             server = start_bridge_server(self.bridge, port)
             logger.info(f"插件桥服务已启动: http://127.0.0.1:{port}")
 
-            if self.web_cfg.get("launch_browser", True):
+            if self.web_cfg["launch_browser"]:
                 self._launch_browser()
                 logger.info("插件已激活:请在浏览器中打开学习通做题页(已打开则自动开始)")
             else:
@@ -95,7 +95,7 @@ class ExtensionExecutor:
         # 复用现有专用实例时无法追加 --load-extension,提示用户
         # (插件已在实例首次启动时装载过,profile 会记住插件)
 
-        cdp_port = self.web_cfg.get("cdp_port", 9222)
+        cdp_port = self.web_cfg["cdp_port"]
         _launch_managed_browser(
             cdp_port, self.web_cfg, stop_check=self._check_stop,
             extra_args=[f"--load-extension={EXTENSION_DIR}"])

@@ -340,11 +340,11 @@ class ScreenshotSearchWorker(QThread):
             self.stage.emit("正在 OCR 识别截图...")
             from core.vision.ocr import OcrEngine
             img = self.image
-            threshold = float(self.cfg["ocr"].get("confidence_threshold", 0.55))
+            threshold = float(self.cfg["ocr"]["confidence_threshold"])
             if img.height < 60 or img.width < 300:
                 # 小图沿用 executor 的放大重试先例:3× LANCZOS + 低阈值
                 img = img.resize((img.width * 3, img.height * 3), Image.LANCZOS)
-                threshold = float(self.cfg["ocr"].get("retry_threshold", 0.3))
+                threshold = float(self.cfg["ocr"]["retry_threshold"])
             blocks = OcrEngine(threshold).run(img)
             if not blocks:
                 self.error.emit("未识别到文字,请重新截图(确保题目文字清晰完整)")

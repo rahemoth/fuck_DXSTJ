@@ -248,7 +248,7 @@ def _launch_managed_browser(port: int, web_cfg: dict, stop_check=None,
     if _port_open(port):
         return
 
-    browser = web_cfg.get("default_browser", "")
+    browser = web_cfg["default_browser"]
     if not browser:
         raise RuntimeError(
             "未设置默认浏览器。请先在【设置 → 网页版】中选择默认浏览器(Edge / Chrome)。")
@@ -300,8 +300,8 @@ def test_connection(web_cfg: dict) -> tuple[bool, str]:
     返回 (是否成功, 说明文本)。"""
     from playwright.sync_api import sync_playwright
 
-    port = web_cfg.get("cdp_port", 9222)
-    keywords = web_cfg.get("url_keywords", ["chaoxing", "mooc"])
+    port = web_cfg["cdp_port"]
+    keywords = web_cfg["url_keywords"]
 
     if not _port_open(port):
         return False, (
@@ -328,12 +328,12 @@ class WebExecutor:
 
     def __init__(self, cfg: dict, emit=None):
         self.cfg = cfg
-        self.web_cfg = cfg.get("web") or {}
+        self.web_cfg = cfg["web"]
         self.emit = emit or (lambda e: None)
         self._stop = threading.Event()
 
         self.llm = LLMClient(cfg["llm"])
-        self.solver = Solver(self.llm, max_retries=cfg["llm"].get("max_retries", 1))
+        self.solver = Solver(self.llm, max_retries=cfg["llm"]["max_retries"])
 
         self.done_count = 0
         self.fail_count = 0
@@ -372,8 +372,8 @@ class WebExecutor:
         """连接调试端口并定位学习通页面;浏览器未启动则自动拉起"""
         from playwright.sync_api import sync_playwright
 
-        port = self.web_cfg.get("cdp_port", 9222)
-        keywords = self.web_cfg.get("url_keywords", ["chaoxing", "mooc"])
+        port = self.web_cfg["cdp_port"]
+        keywords = self.web_cfg["url_keywords"]
 
         self._pw = sync_playwright().start()
         self._browser = _ensure_cdp_browser(
@@ -381,7 +381,7 @@ class WebExecutor:
         logger.info(f"已连接调试端口 {port}")
 
         # 定位学习通页面:立即找,找不到轮询等待用户打开
-        wait_sec = self.web_cfg.get("wait_page_timeout", 180)
+        wait_sec = self.web_cfg["wait_page_timeout"]
         t0 = time.time()
         while True:
             self._check_stop()
@@ -425,9 +425,9 @@ class WebExecutor:
         return items
 
     def _loop(self, page):
-        q_delay = self.web_cfg.get("q_delay", [3, 8])
-        opt_delay = self.web_cfg.get("opt_delay", [0.5, 1.5])
-        dry_run = self.cfg["action"].get("dry_run", False)
+        q_delay = self.web_cfg["q_delay"]
+        opt_delay = self.web_cfg["opt_delay"]
+        dry_run = self.cfg["action"]["dry_run"]
         idle_rounds = 0
 
         while not self._stop.is_set():

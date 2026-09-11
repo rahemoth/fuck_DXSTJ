@@ -14,13 +14,12 @@
   题干锚点x+short_answer_click[0], 题干底+short_answer_click[1])
 - 章节头如 "二.多选题(14分)"、不支持的题型需排除
 
-锚点与阈值外置在 roi.json,UI 改版只需调配置。
+锚点与阈值外置在 config.yaml 的 roi 节,UI 改版只需调配置。
 """
-import json
 import re
 from dataclasses import dataclass, field
-from pathlib import Path
 
+from core.config import DEFAULT_CONFIG
 from core.log import get_logger
 from core.vision.ocr import OcrBlock
 
@@ -137,15 +136,16 @@ class Question:
 
 class QuestionLocator:
     def __init__(self, roi: dict | None = None):
-        self.roi = roi or _load_roi()
-        self.region = self.roi.get("content_region", [100, 0, 1000, 99999])
-        self.card_width = self.roi.get("answer_card_width", 190)
-        self.option_indent = self.roi.get("option_indent", 30)
-        self.option_max_dx = self.roi.get("option_max_offset_x", 250)
-        self.blank_click_dx = self.roi.get("blank_click_dx", 100)
-        self.blank_region_width = self.roi.get("blank_region_width", 500)
-        self.short_answer_click = self.roi.get("short_answer_click", [260, 145])
-        self.toolbar_indent = self.roi.get("toolbar_indent", 25)
+        # roi 由执行器注入(config.yaml 的 roi 节);零参构造用于测试/工具
+        self.roi = roi if roi is not None else DEFAULT_CONFIG["roi"]
+        self.region = self.roi["content_region"]
+        self.card_width = self.roi["answer_card_width"]
+        self.option_indent = self.roi["option_indent"]
+        self.option_max_dx = self.roi["option_max_offset_x"]
+        self.blank_click_dx = self.roi["blank_click_dx"]
+        self.blank_region_width = self.roi["blank_region_width"]
+        self.short_answer_click = self.roi["short_answer_click"]
+        self.toolbar_indent = self.roi["toolbar_indent"]
 
     # ---------- 对外接口 ----------
 
@@ -251,7 +251,7 @@ class QuestionLocator:
                 break
             if _SECTION_RE.match(text):
                 continue
-            if any(kw in text for kw in self.roi.get("ignore_blocks", [])):
+            if any(kw in text for kw in self.roi["ignore_blocks"]):
                 continue
             rest.append(b)
         rest.sort(key=lambda b: (b.box[1], b.box[0]))
@@ -274,8 +274,8 @@ class QuestionLocator:
         3. 完全无字母(按缩进+y顺序自动赋 A/B/C/D)
         同时做完整性校验(字母连续性/题干-选项间距/底部裁剪)。
         """
-        labels = self.roi.get("option_labels", list("ABCDEF"))
-        line_gap = self.roi.get("option_line_gap", 35)
+        labels = self.roi["option_labels"]
+        line_gap = self.roi["option_line_gap"]
         stem_parts = [q.stem] if q.stem else []
         stem_bottom = anchor.box[3]          # 题干最后一行的 y2
         first_opt_y1 = None
@@ -408,7 +408,7 @@ class QuestionLocator:
         gaps = [b - a for a, b in zip(ys, ys[1:])]
         # 参考行距:多个行距时取最小值(正常行距),并与配置下限结合,
         # 避免个别页字体偏大(实际行距>配置值)时误报
-        row_gap = self.roi.get("option_row_gap", 49)
+        row_gap = self.roi["option_row_gap"]
         ref = max(min(gaps), row_gap * 0.8) if len(gaps) >= 2 else row_gap
         if any(g > ref * 1.6 for g in gaps):
             return f"选项行距异常,疑似整行漏检(gaps={gaps})"
@@ -426,11 +426,11 @@ class QuestionLocator:
                 return f"选项标签不连续:{','.join(opt_labels)}"
         # 2. 第一个选项应紧跟题干(间距过大说明首选项上方有选项被漏检)
         if first_opt_y1 is not None and stem_bottom is not None:
-            if first_opt_y1 - stem_bottom > self.roi.get("stem_option_gap", 110):
+            if first_opt_y1 - stem_bottom > self.roi["stem_option_gap"]:
                 return "题干与首选项间距过大"
         # 3. 最后一个选项不能贴近视口底部(下方选项可能被裁剪)
         if page_height is not None and last_opt_y2 is not None:
-            if last_opt_y2 > page_height - self.roi.get("bottom_margin", 60):
+            if last_opt_y2 > page_height - self.roi["bottom_margin"]:
                 return "选项贴近视口底部"
         return None
 
@@ -530,7 +530,7 @@ class QuestionLocator:
             return
         # 底部裁剪:最后一个输入框贴近视口底,下方可能还有空未露出
         if page_height is not None and last_blank_y2 is not None:
-            if last_blank_y2 > page_height - self.roi.get("bottom_margin", 60):
+            if last_blank_y2 > page_height - self.roi["bottom_margin"]:
                 q.complete = False
                 q.incomplete_reason = "输入框贴近视口底部"
 
@@ -560,7 +560,7 @@ class QuestionLocator:
         q.editor_center = (anchor.box[0] + dx, stem_bottom + dy)
         # 点击点须在视口内且离底边有余量(编辑器约230px高,点击点在中部)
         if page_height is not None:
-            if q.editor_center[1] > page_height - self.roi.get("bottom_margin", 60):
+            if q.editor_center[1] > page_height - self.roi["bottom_margin"]:
                 q.complete = False
                 q.incomplete_reason = "编辑器贴近视口底部"
 
@@ -571,9 +571,3 @@ class QuestionLocator:
         if x2 is not None:
             rx2 = x2
         return rx1 <= x1 <= rx2 and ry1 <= y1 <= ry2
-
-
-def _load_roi() -> dict:
-    path = Path(__file__).parent.parent / "resource" / "roi.json"
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)

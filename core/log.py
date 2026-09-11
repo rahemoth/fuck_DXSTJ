@@ -31,9 +31,9 @@ def _build_file_handler() -> logging.Handler | None:
         cfg = Config.get()["log"]
     except Exception:
         return None
-    if not cfg.get("save_to_file", True):
+    if not cfg["save_to_file"]:
         return None
-    log_dir = ROOT / cfg.get("dir", "logs")
+    log_dir = ROOT / cfg["dir"]
     log_dir.mkdir(parents=True, exist_ok=True)
     filename = log_dir / f"{datetime.now():%Y%m%d}.log"
     fh = logging.FileHandler(filename, encoding="utf-8")

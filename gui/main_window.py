@@ -392,7 +392,7 @@ class MainWindow(FluentWidget):
         self._tick_timer.timeout.connect(self._on_tick)
 
         self._theme_mode = str(
-            Config.get().data.get("ui", {}).get("theme", "dark")).lower()
+            Config.get()["ui"]["theme"]).lower()
         if self._theme_mode not in THEME_ORDER:
             self._theme_mode = "dark"
 
@@ -723,7 +723,7 @@ class MainWindow(FluentWidget):
 
     def _on_fluent_theme_changed(self):
         """任何地方(设置弹窗 / 本窗口按钮)调 setTheme 后同步主题模式并重绘"""
-        mode = str(Config.get().data.get("ui", {}).get("theme", "dark")).lower()
+        mode = str(Config.get()["ui"]["theme"]).lower()
         if mode not in THEME_ORDER:
             mode = "dark"
         self._theme_mode = mode

@@ -24,7 +24,7 @@ class LLMClient:
         self.client = OpenAI(
             base_url=self.cfg["base_url"].rstrip("/"),
             api_key=self.cfg["api_key"],
-            timeout=self.cfg.get("timeout", 60),
+            timeout=self.cfg["timeout"],
         )
 
     def chat(self, system: str, user: str) -> str:
@@ -33,7 +33,7 @@ class LLMClient:
         实测请求可无限挂起(2026-09-08 E2E 因此卡死 1 小时+),
         故在工作线程中调用并设硬超时封顶:超时后关闭并重建底层连接
         强制解除阻塞的读调用,异常向上抛出由 executor 跳过该题。"""
-        hard = float(self.cfg.get("timeout", 60)) * 3
+        hard = float(self.cfg["timeout"]) * 3
         ex = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         try:
             fut = ex.submit(self._chat_blocking, system, user)
@@ -49,7 +49,7 @@ class LLMClient:
     def _chat_blocking(self, system: str, user: str) -> str:
         resp = self.client.chat.completions.create(
             model=self.model,
-            temperature=self.cfg.get("temperature", 0.1),
+            temperature=self.cfg["temperature"],
             messages=[
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
