@@ -37,7 +37,7 @@ def test_default_config_validates():
 
 def test_schema_sections_and_roi_keys():
     assert set(DEFAULT_CONFIG) == {
-        "window", "llm", "action", "ocr", "web", "ui", "log", "roi"}
+        "window", "llm", "action", "ocr", "web", "ui", "log", "roi", "course"}
     assert len(DEFAULT_CONFIG["roi"]) == 18
 
 

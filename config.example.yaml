@@ -124,14 +124,8 @@ roi:
   toolbar_indent: 25            # 工具条缩进阈值
   focus_click_x: 70             # 建立键盘焦点的内容区空白列 x(动态探测失败时回退)
 
-# ---- 预留:网课助手(功能未上线,可提前配置;不参与校验) ----
-# course:
-#   enabled: true
-#   playback_rate: 1.0
-#   volume: 0
-#   mode: next
-#   restudy: false
-#   force_learn: false
-#   video_quiz_strategy: random
-#   enable_ppt: true
-#   enable_hyperlink: true
+# ---- 网课(自动播放):静音播放学习通网课视频,完成后自动跳转 ----
+course:
+  playback_rate: 1.0            # 倍速(建议 1-2 倍,过快可能触发风控清空进度)
+  volume: 0                     # 音量 0 = 静音
+  mode: next                    # next = 用 PCount.next 跳下一任务点; job = 点击目录下一章

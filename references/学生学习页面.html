@@ -1,0 +1,4407 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<script type="text/javascript" src="https://me.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=E482wS7sawrWXLtaQVF1mA0LEm0onGCAGr1JCvGxrgKRSnnaKo8sofGZAdG1qsEVXipoaAyHQNXG77gjxHIfZ9BfhCSGSN2CgMixfLU96edHFNfLTwstBMRGH4rA1Msz3rbjGSrbStPHR5aEnJjtBuILuwc-1tDX7MfQdk92yF8dqLGu7Tdkc7NMTtgIflYz8CdIHiCGyaP9n8ZgkIvULh4el9FHAcCKuzuSQ-mHoqqgL2iot1GgRigyhGyi35iqHWfG219prN96_itmL7wVAtJTcWickr4APgPdvDY9P9QePmz-NFdNL8IK9g4g_LAeq6jNGoBQcLraZE9cijTWeQ" charset="UTF-8"></script><script>
+    _HOST_ = "//mooc1.chaoxing.com";
+    _CP_ = "/mooc-ans";
+    _HOST_CP1_ = "//mooc1.chaoxing.com/mooc-ans";
+    // _HOST_CP2_ = _HOST_ + _CP_;
+    _HOST_CP2_ = _CP_;
+</script><head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<title>学生学习页面</title>
+	<link href="//mooc1.chaoxing.com/mooc-ans/css/courselist/global.css?v=2025-0424-1038" rel="stylesheet" type="text/css" />
+	<link href="//mooc1.chaoxing.com/mooc-ans/css/courselist/play.css?v=2022-0701-2024" rel="stylesheet" type="text/css" />
+	<link rel="stylesheet" type="text/css"  href="//mooc1.chaoxing.com/mooc-ans/css/courselist/face-collection-qr.css?v=2023-0518-1718"/>
+	<style>
+			</style>
+	<script>
+		var pulishCheckTip = '请输入话题名称或者内容';
+		var discussFailedTip = '发帖失败';
+		var limitword150 = '字数不能超过150！';
+		var titleLimit200 = '标题限200字';
+		var contentLimit20000 = '内容限20000字';
+		window.showAiBrainMap = "false";
+		window.isEngineNode = "0";
+	</script>
+	<script src="//mooc1.chaoxing.com/mooc-ans/js/group/baguettebox.min.js"></script>
+	<link rel="stylesheet" href="//mooc1.chaoxing.com/mooc-ans/css/group/baguettebox.min.css">
+	<link href="//mooc1.chaoxing.com/mooc-ans/css/group/chapter_common.css" type="text/css" rel="stylesheet">
+	<link href="//mooc1.chaoxing.com/mooc-ans/css/group/chapter_student_common.css?v=1" type="text/css" rel="stylesheet">
+	<link rel="stylesheet" href="//mooc1.chaoxing.com/mooc-ans/css/uploadImg.css">
+	<link rel="stylesheet" type="text/css" href="//mooc1.chaoxing.com/mooc-ans/mooc2/css/common.css?v=2025-0424-1038"/>
+	<link rel="stylesheet" type="text/css" href="//mooc1.chaoxing.com/mooc-ans/mooc2/css/style.css?v=2025-0424-1038"/>
+	<link rel="stylesheet" type="text/css" href="//mooc1.chaoxing.com/mooc-ans/mooc2/css/knowledge/q_preview.css?v=2026-0709-1540"/>
+		<script src="//mooc1.chaoxing.com/mooc-ans/mooc2/js/knowledge/uploadNew.js?v=2026-0415-678"></script>
+	<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/space/new/way-upload/plupload.full.min.js?v=2020-1230-1020"></script>
+	<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/space/new/way-upload/css/DD_belatedPNG_0.0.8a-min.js"></script>
+	<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/js/courselist/jquery-1.7.2.min.js"></script>
+
+	
+	<link href="//mooc1.chaoxing.com/mooc-ans/js/webuploader-0.1.5/webuploader.css" type="text/css" rel="stylesheet"/>
+	<script src="//mooc1.chaoxing.com/mooc-ans/js/webuploader-0.1.5/webuploader.nolog.min.js"></script>
+	<script src="//mooc1.chaoxing.com/mooc-ans/mooc2/js/knowledge/new-chapter-group-right.js?v=2025-0910-1011"></script>
+	<script src="//mooc1.chaoxing.com/mooc-ans/js/courselist/chapterDetect.js?v=2023-1023-1400"></script>
+	<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/mooc2/js/poptoast.js"></script>
+
+			<script type="text/javascript" src="https://robot-lc.chaoxing.com/sdk/CxRobotSdkJs.js"></script>
+		<link rel="stylesheet" type="text/css"  href="//mooc1.chaoxing.com/mooc-ans/css/courselist/studentStudy.css?v=2026-0708-1800"/>
+	
+	<style>
+					.chapterQrcode{right:0px;}
+			.teacherTool{right:318px;}
+			.toolOpenBtn{left:-11px;background:url(//mooc1.chaoxing.com/mooc-ans/images/toolOpenBtn.png) no-repeat left center;}
+			.toolCloseBtn{left:-11px;background:url(//mooc1.chaoxing.com/mooc-ans/images/toolCloseBtn.png) no-repeat left center;}
+			.jobhint{left:-100px;}
+			.content .main{padding:0 432px 0 0;}
+			@media screen and (max-width: 1440px) {
+				.content .main{padding:0 300px 0 0;}
+			}
+		@media screen and (max-width: 1040px) {
+			.content .main{padding:0 200px 0 0;}
+		}
+				.editorMaskDiv .popDiv{margin-left:0;margin-top:0}
+		#edui_fixedlayer{z-index:101!important;}
+		.edui-default .edui-editor-toolbarbox{position:fixed!important;top:110px}
+		.stuTitle{padding-bottom:0;}
+		.formNote_padding .edui-editor-toolbarboxinner .webuploader-pick{height: auto;}
+		.formNote_padding .multieditor .edui-editor-toolbarboxinner .edui-for-justify.right{top:0;}
+		.formNote_padding  .multieditor .edui-editor-toolbarbox{z-index:100;}
+		.sf-box{position:fixed!important}
+				.root-class {
+			width: 100px;height: 100px;
+		}
+		.root-class .figure-wrapper {
+			width: unset !important;
+			height: unset !important;
+		}
+				.pcTipsBx{margin:10px 100px;padding:14px 20px;background:#FFFDE7;border:solid 1px #FFE58F;border-radius:8px;line-height:20px;font-size:14px;color:#131B26;height:48px;box-sizing:border-box;}
+		.pcTipsBx i{float:left;width:18px;height:18px;background:url(//mooc1.chaoxing.com/mooc-ans/images/courselist/pcTipsIcon.png) no-repeat;background-size:100%;margin-right:10px;margin-top:1px}
+
+			</style>
+	<link href="//mooc1.chaoxing.com/mooc-ans/css/courselist/nodeToolBar.css" type="text/css" rel="stylesheet"/>
+	<script src="//mooc1.chaoxing.com/mooc-ans/js/ServerHost.js"></script>
+	<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/js/jquery.nicescroll.min.js"></script>
+	<script src="//mooc1.chaoxing.com/mooc-ans/js/jquery.color.js"></script>
+	<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/static/js/domain.js"></script>
+				<script async type="text/javascript" src="https://fystat-ans.chaoxing.com/log/setlog?personid=432104926&courseId=266218616&classId=152328834&encode=7e6bc3341a14790e9eb28625911d6671&chapterId=1223955188"></script>
+		<link href="//mooc1.chaoxing.com/mooc-ans/css/work/viewer.min.css" rel="stylesheet" type="text/css" />
+	<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/js/jquery.md5.js"></script>
+	<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/space/work/js/viewer-jquery.min.js?v=2025-1128-1511"></script>
+	<script src="//mooc-res2.chaoxing.com/mooc-ans/space/new/js/wayer_v1.2.mini.js" ></script>
+	<script src="//mooc1.chaoxing.com/mooc-ans/js/check_vercode.js" type="text/javascript"></script>
+	<script src="//mooc1.chaoxing.com/mooc-ans/safefilter/ajax-unlock.js?v=2024-0418-1100"></script>
+	<script type="text/javascript" src="https://noteyd.chaoxing.com/res/plugin/ueditor4thirdparty/multieditor.js"></script>
+	<script>
+		typeof MultiEditor != "undefined" && MultiEditor.init('edit',null,{
+			'isGetVideoDataFromCenter': true, //获取视频地址是否从中心存储获取，避免云盘视频删除后视频提示已删除的问题
+			'prefix': 'https://noteyd.chaoxing.com',
+			'topOffsetScrollDiv': '.formNote_padding'
+		});
+	</script>
+
+	<script type="text/javascript">
+        function scrollToActiveCatalog() {
+            try {
+                var activeElement = $(".posCatalog_active");
+                if (activeElement.length > 0) {
+                    var container = $("#coursetree");
+                    var containerTop = container.offset().top; // 容器顶部距离页面顶部的距离
+                    var elementTop = activeElement.offset().top; // 目标元素顶部距离页面顶部的距离
+                    // 计算目标元素相对于容器的偏移量
+                    var scrollToPosition = elementTop - containerTop + container.scrollTop() - 50;
+                    // 平滑滚动到目标位置
+                        container.animate({
+                        scrollTop: scrollToPosition
+                        }, 500);
+                }
+            }catch (e) {
+            }
+        }
+				window['dtype'] =  "Course";
+		window['app'] =  "1";
+		window.cxktDomain = "";
+		window.cxkdEditorUrl = "";
+		var ut_value = "s"
+		var stu_clazzId = "152328834";
+		var stu_CourseId = "266218616";
+		var stu_knowledgeId = "1223955188";
+		var stu_cpi = "432104926";
+		var ua=navigator.userAgent.indexOf('chaoxing_wisdomclass');
+		if(ua!=-1){
+			document.write('<script src="//mooc1.chaoxing.com/mooc-ans/js/phone/protocolChaoXing/CXJSBridge.js"><\/script>');
+			document.write('<script src="//mooc1.chaoxing.com/mooc-ans/js/phone/app.utils.js?v=2"><\/script>');
+		}
+		var utEnc="3c9046467add1764005fdeb8b00c12ed";
+		var courseId=266218616;
+		var courseid=266218616;
+
+		var videoNoteCardId = "0";
+		var videoNoteMid = "";
+		var videoNoteTime = ""
+		var courseEnded = '' === 'true';
+		var ai_stu_knowledgeId = "1223955188";
+		var crossCardId = "";
+		var crossId = "0";
+        var fromCrossKid = "0";
+		String.prototype.trim=function(){return this.replace(/(^\s*)|(\s*$)/g,"");}
+		//设置cookie
+		var setCookie = function(name,value,hours,path,domain) {
+			var oNow = new Date();
+			oNow.setHours(oNow.getHours() + hours);
+			var sCookie = name + "=" + escape(value);
+			if(hours) {
+				sCookie += ";expires=" + oNow.toGMTString();
+			}
+			if(path) {
+				sCookie += ";path=" + path;
+			}
+			if(domain) {
+				sCookie += ";domain=" + domain;
+			}
+			document.cookie = sCookie;
+		};
+		//获取cookie
+		var getCookie = function(name) {
+			var oRegExp = new RegExp("(^|)" + name + "=([^;]*)(;|$)","gi").exec(document.cookie), aCookie;
+			if(aCookie = oRegExp) {
+				return unescape(aCookie[2]);
+			}
+			return null;
+		};
+		var videoAutoPlay = "0";
+		function hideChangeBtn() {
+			if($("#coursetree>ul>li:first .posCatalog_level>ul>li:first>.posCatalog_select").hasClass("posCatalog_active") && (($(".prev_list li").length == 0) || ($(".prev_list li").length > 0 && $(".prev_list>ul>li:first").hasClass("active")))){
+				$(".prev").css("display", "none");
+			} else {
+				$(".prev").css("display", "block");
+			}
+			var len = $("#coursetree li").length;
+			if ($("#coursetree li").eq(len - 1).children(".posCatalog_select").hasClass("posCatalog_active") && (($(".prev_list") && $(".prev_list").length == 0) || ($(".prev_list") && $(".prev_list").length > 0 && $(".prev_list>ul>li:last").hasClass("active")))) {
+				$(".next").css("display", "none");
+			} else {
+				$(".next").css("display", "block");
+			}
+		}
+		var showorhide=function(htmlid){
+			var doc = document.getElementById(htmlid);
+			if(doc!=null){
+				if(doc.style.display!="none"){
+					doc.style.display="none";
+				}else{
+					doc.style.display="block";
+				}
+			}
+		};
+		var show=function(htmlid){
+			var doc = document.getElementById(htmlid);
+			doc.style.display="block";
+		};
+		var tasckvalidate=function(clazzid,nodeid){
+			window.open("/mooc-ans/edit/validate?clazzid="+clazzid+"&nodeid="+nodeid+"&courseId="+courseId);
+		};
+		function scrollToPosition(position) {
+			var height1 =  $('#qqqq').offset().top;
+			position = position + height1;
+			$('html, body').animate({
+				scrollTop: position
+			}, 1000); // 1000毫秒（1秒）内平滑滚动
+		}
+		function crossTransfer(crossId) {
+			window.location.href = "/mooc-ans/knowledge/crossTransfer?courseid=266218616&clazzid=152328834&crossid=" + crossId + "&fromCrossKid=1223955188";
+		}
+		function bindSubCheck(callback) {
+			$('#sub').unbind('click');
+			$('#sub').on('click', function() {
+				var code=$("#code").val();
+				jQuery.ajax({
+					type:"POST",
+					url:_HOST_CP2_ + "/kaptcha-img/ajaxValidate2",
+					data:{code:code},
+					success: function(data){
+						$("#code").val("");
+						if(data.status){
+							$("#validate").css("display","none");
+							WAY.box.hide();
+							var enc=data.enc;
+							callback && callback(enc);
+						}else{
+							getVarCode();
+						}
+					}
+				});
+			});
+		}
+
+		//目录滚动条
+		function posCatalogScroll(){
+			// 使用原生滚动，无需额外初始化
+		}
+		function posChapter(){
+			var fanyaHeight = $(window).height()
+			$('.posCatalog').not('#coursetree').css({'height':fanyaHeight-40-65-56}) //左右浮框
+			$('#content1').css({'height':fanyaHeight-60}); // content1设置固定高度
+			var searchH = $('#content1 .dataSearch_chapter').outerHeight(true) || 56; // 搜索区域实际占用高度
+			$('#coursetree').css({'height': fanyaHeight-40-65 - searchH}); // coursetree直接设置固定高度
+							$('#selector').css({'height':fanyaHeight-40}) //目录内容
+			            		}
+		function posDiscuss(){
+			var fanyaHeight = $(window).height()
+			$('#posDiscussScroll').css({'height' : fanyaHeight - 40 - 65 - 30}) //左右浮框
+		}
+		// 笔记列表的高度
+		function posNote() {
+			var fanyaHeight = $(window).height()
+			$('#posNoteScroll').css({'height' : fanyaHeight - 40 - 65 - 30}) //左右浮框
+		}
+		function setIframeStyle() {
+			if ($("#iframe").contents().find(".wrap").length > 0) {
+				var padr = $(".prev_title").css("padding-right");
+				$("#iframe").contents().find(".wrap").css("padding", "30px " + padr);
+			}
+		}
+		window.onresize = function(){
+			posChapter()
+			posDiscuss()
+			posNote()
+			setIframeStyle()
+		}
+
+		function handleResize() {
+			posChapter()
+			posDiscuss()
+			posNote()
+			setIframeStyle()
+		}
+		window.addEventListener('resize', handleResize);
+		$(document).ready(function(){
+							jQuery.ajax({ //一个Ajax过程
+					type: "get", //以get方式与后台沟通
+					url : _HOST_CP2_ + "/mycourse/studentstudycourselist",
+					dataType:'html',//返回的值
+					data: {courseId:'266218616',chapterId:'1223955188',clazzid:'152328834',cpi:'432104926',mooc2:1,isMicroCourse: false},
+					success: function(data){//如果调用成功
+						document.getElementById("coursetree").innerHTML=data;
+						jQuery("#coursetree .posCatalog_select").removeClass("posCatalog_active");
+						jQuery("#cur" + 1223955188).addClass("posCatalog_active");
+                        setTimeout(scrollToActiveCatalog, 200)
+						var bulletFormat = "";
+						if( bulletFormat != "null" && bulletFormat == "Dot"){
+							$(".posCatalog_sbar").hide();
+						}
+						posCatalogScroll()
+						posChapter()
+						checkMobileBrowerLearn();
+						hideChangeBtn();
+					}
+				});
+					});
+		function getJobCount(obj) {
+			var knowledgeJobCount = $(obj).find(".jobUnfinishCount");
+			var totalCount = 0;
+			for (var i = 0; i < knowledgeJobCount.size(); i++) {
+				var singleJobCount = parseInt(knowledgeJobCount.eq(i).val());
+				totalCount += singleJobCount;
+			}
+			return totalCount;
+		}
+		var addDiscussReply = function(discussId,replycount){
+
+			var doc = document.getElementById("discuss"+discussId);
+			var content = doc.value;
+			if(content==null||content=='')
+			{
+				alert("内容不能为空！");
+				return;
+			}
+			doc.value = "";
+			jQuery.post(_HOST_CP2_ + "/bbsapi/addDiscussReply",
+					{
+						discussId : discussId
+						,replycount : replycount
+						,clazzid : '152328834'
+						,userId : '363273819'
+						,content : content
+						,role : 1
+						,schoolId : '2183',
+						replaytype:'1',
+						ut:'s'
+					},
+					function(data){
+						if(data=='error'){
+							alert("添加失败！");
+						}else{
+							var doc = document.getElementById("replaylist"+discussId);
+							data = data.replace(/(^\s*)|(\s*$)/g,"");
+							doc.innerHTML = data;
+							var rcdoc = document.getElementById("replycount"+discussId);
+							rcdoc.innerHTML = parseInt(rcdoc.innerHTML)+1;
+						}
+					}
+			);
+		};
+
+
+		var replay = function(num,disid,schoolid) {
+			var doc = document.getElementById("replaylist"+disid);
+			var showeddoc = document.getElementById("showed"+disid);
+			if(doc.style.display!="none"){
+				doc.style.display = "none";
+			}else{
+				var obj = doc.innerHTML;
+				if(obj==null||obj==""){
+
+					jQuery.post(_HOST_CP2_ + "/schoolCourseInfo/getReplayList",
+							{
+								discussid:disid,
+								schoolId:schoolid,
+								replycount:num,
+								date:new Date(),
+								replaytype:'1'
+							},
+							function(data){
+								data = data.replace(/(^\s*)|(\s*$)/g,"");
+								doc.innerHTML = data;
+							}
+					);
+					doc.style.display = "block";
+					show("replaytextarea"+disid);
+				}else{
+					doc.style.display = "block";
+					show("replaytextarea"+disid);
+				}
+			}
+		};
+
+		var praise = function(obj,disid,schoolid) {
+			jQuery("#praise"+disid).removeClass();
+			jQuery("#praise"+disid).addClass("cur");
+			jQuery.post(_HOST_CP2_ + "/schoolCourseInfo/addBBSPraise",
+					{
+						disid:disid
+						,schoolid : schoolid
+						,userid:'363273819'
+					},
+					function(data){
+						var doc = document.getElementById("praise"+disid);
+						doc.innerHTML = parseInt(doc.innerHTML)+1;
+						obj.onclick=null;
+
+					}
+			);
+
+		}
+
+		var addtopcomment = function(clazzid){
+			var title = document.getElementById("toplevelTextCommentTitle").value;
+			if(title==null || title=='' || title.trim()=='')
+			{
+				alert("标题不能为空！");
+				return;
+			}
+			if(title.length>50){
+				alert("字数不能超过50");
+				document.getElementById("toplevelTextCommentTitle").value = title.substring(0,50);
+				return;
+			}
+			var content = document.getElementById("toplevelTextCommentContent").value;
+			document.getElementById("toplevelTextCommentTitle").value = "";
+			document.getElementById("toplevelTextCommentContent").value = "";
+			var ask = 0;
+			if(document.getElementById("askteacher") != null){
+				if(document.getElementById("askteacher").checked == true){
+					ask=1;
+				}
+			}
+			var chapterId = document.getElementById("chapterIdid").value;
+			jQuery.post(_HOST_CP2_ + "/bbsapi/addCDiscuss",
+					{
+						moocId:'266218616',
+						clazzid:'152328834',
+						userId:'363273819',
+						title: title,
+						content:content,
+						chapterIds:chapterId,
+						schoolId:'2183',
+						replaytype:'1',
+						ask : ask,
+						role:'1'
+						,type: 'student'
+						,ut:'s'
+					},
+					function(data){
+						data = data.replace(/(^\s*)|(\s*$)/g,"");
+						var doc = document.getElementById("posDiscussScroll");
+						doc.innerHTML = data;
+						//alert("操作成功！");
+					}
+			);
+		};
+		function getcookie(objname){
+			var arrstr = document.cookie.split("; ");
+			for(var i = 0;i < arrstr.length;i ++){
+				var temp = arrstr[i].split("=");
+				if(temp[0] == objname){
+					return unescape(temp[1]);
+				}
+			}
+		}
+		function getChapterRightDiscuss(){
+			var chapterId=document.getElementById("chapterIdid").value;
+			jQuery.post(_HOST_CP2_ + "/schoolCourseInfo/getgrouptopic",
+					{
+						courseId:'266218616'
+						,clazzid:'152328834'
+						,type: 2
+						,ut:'s'
+						,chapterId:chapterId
+						,mooc2:1
+						,pagesize: 1000
+					},
+					function(data){
+						data = data.replace(/(^\s*)|(\s*$)/g,"");
+						var doc = document.getElementById("posDiscussScroll");
+						doc.innerHTML = data;
+						$(function(){
+							bindImg2('fileUploader_group');
+							baguetteBox.run('.smallImg', {
+								animation: 'fadeIn',
+							});
+						});
+
+						$(function(){
+							//输入内容
+							$('.formTopic_text>textarea,.formNote_text>textarea').focus(function(){
+								$(this).parent().addClass('areaShadow')
+							})
+							$('.formTopic_text>textarea,.formNote_text>textarea').blur(function(){
+								$(this).parent().removeClass('areaShadow')
+							})
+
+							//讨论话题showhide
+							$('.newTopic_bnt').click(function(){
+								// 新建笔记屏蔽截屏按钮
+								$("#editor1 .edui-for-screenshot").hide();
+								$(this).next().slideDown(300)
+							})
+							$('.replyQuxiao').click(function(){
+								$(this).parent().parent().slideUp(300)
+							})
+							posDiscuss();
+							//话题输入内容滚动条
+							function formTopic_text_Scroll(){
+								try {
+									$(".formTopic_text_Scroll").niceScroll({cursorborder:"",cursorwidth:8,cursorcolor:"#CFD8E6",boxzoom:false,autohidemode:true});
+									setInterval(function(){
+										$(".formTopic_text_Scroll").getNiceScroll().resize(); //检测滚动条是否重置大小（当窗口改变大小时）
+									},300)
+								} catch (e) {
+								}
+
+							}
+							formTopic_text_Scroll()
+							function formTopicScroll(){
+								try {
+									$("#formTopicScroll").niceScroll({cursorborder:"",cursorwidth:8,cursorcolor:"#CFD8E6",boxzoom:false,autohidemode:true});
+									setInterval(function(){
+										$("#formTopicScroll").getNiceScroll().resize(); //检测滚动条是否重置大小（当窗口改变大小时）
+									},300)
+								} catch (e) {
+								}
+							}
+							formTopicScroll()
+							function posDiscuss(){
+								var fanyaHeight = $(window).height()
+								$('#posDiscussScroll').css({'height' : fanyaHeight - 40 - 65 - 30}) //左右浮框
+							}
+							function formDiscussScroll(){
+								try {
+									$("#posDiscussScroll").niceScroll({cursorborder:"",cursorwidth:8,cursorcolor:"#CFD8E6",boxzoom:false,autohidemode:true});
+									setInterval(function(){
+										$("#posDiscussScroll").getNiceScroll().resize(); //检测滚动条是否重置大小（当窗口改变大小时）
+									},300)
+								} catch (e) {
+								}
+							}
+							formDiscussScroll()
+							window.onresize = function(){
+								posDiscuss()
+							}
+							var count = $("#content2 .itemDiscuss").length;
+							if (count > 0) {
+								if (count < 1000) {
+									$(".discussNum").text("(" + count + ")");
+								}
+							} else {
+								$(".discussNum").text("");
+							}
+							if ($("#onlyTchPost").val() != '1') {
+								$("#content2 .newTopic1").css("display", "block");
+							}
+						})
+					}
+			);
+		}
+
+		function getGroupChapterRightDiscuss(){
+			jQuery.post(_HOST_CP2_ + "/schoolCourseInfo/getgrouptopic",
+					{
+						courseId:'266218616'
+						,clazzid:'152328834'
+						,type: 2
+						,ut:'s'
+					},
+					function(data){
+						data = data.replace(/(^\s*)|(\s*$)/g,"");
+						var doc = document.getElementById("posDiscussScroll");
+						doc.innerHTML = data;
+					}
+			);
+		}
+		
+		var changePan = function(num){
+			num = parseInt(num);
+
+			for(var i=1; i <= 5; i++){
+				var titledoc = document.getElementById("tit"+i);
+				var contentdoc = document.getElementById("content"+i);
+
+				if(!titledoc || !contentdoc){
+					continue;
+				}
+
+				if(1!=0 || ( 1==0 && i!=2)){
+					if(i==num){
+						titledoc.className="active";
+						titledoc.style.display="block";
+						contentdoc.style.display="block";
+					}else{
+						titledoc.className="";
+						contentdoc.style.display="none";
+					}
+				}
+			}
+		}
+		var changeDisplayContent = function(num,totalnum,chapterId,courseId,clazzid,knowledgestr,crossid){
+			setChapterNumData(num);
+			num = parseInt(num);
+			totalnum = parseInt(totalnum);
+			PCount.setIndex(num);
+			$(".prev_ul li").removeClass("active");
+			for(var i=1;i<=totalnum;i++){
+				var titledoc = document.getElementById("dct"+i);
+				if(i==num){
+					titledoc.className="active";
+					num = num-1;
+					document.getElementById("iframe").src="/mooc-ans/knowledge/cards?clazzid="+clazzid+"&courseid="+courseId+"&knowledgeid="+chapterId+"&num="+num+"&ut=s&cpi=432104926&v=2025-0424-1038-4&mooc2=1&isMicroCourse=false&editorPreview=0&crossId=" + crossid;
+					var el = $('#iframe');
+					window.ed_reinitIframe = function ed_reinitIframe(){
+						var iframe = el[0];
+
+						try{
+							var height = iframe.contentWindow.document.body.scrollHeight;
+                                                            if (parseInt(height) < 500) {
+                                    height = '500px';
+                                }
+                            							el.attr('height',height);
+						}catch (ex){}
+					}
+					if($("#openlock").length>0){
+						if(num+1==totalnum){
+							setTimeout('openlockshow();',2000);
+						}else{
+							document.getElementById("openlock").style.display="none";
+						}
+					}
+					window.setInterval("ed_reinitIframe()", 200);
+				}else{
+					titledoc.className="c"+i;
+				}
+			}
+			if(typeof(MoocPlayers)!='undefined'){
+				MoocPlayers.clearMids();
+			}
+			hideChangeBtn();
+		}
+		//点击上下章进行章节人脸识别时使用此方法跳入
+		function faceCheckOverJump(chapterId, courseId, clazzid, faceCheckEnc, faceCheckTime){
+			var jumpType =  $("#jumpType").val();
+			var jumpCount =  $("#jumpCount").val();
+			var curcount =  $("#curcount").val();
+			if(jumpType == 1){
+				PCount.setIndex(curcount);
+				PCount.next(jumpCount, chapterId, courseId, clazzid, '', faceCheckEnc, faceCheckTime)
+			}else{
+				PCount.setIndex(curcount);
+				PCount.previous(jumpCount, chapterId, courseId, clazzid, '', faceCheckEnc, faceCheckTime)
+			}
+		}
+
+		function scroll2Job() {
+			closeDeleteWindow();
+			var jobDiv = $("#iframe").contents().find(".ans-job-icon");
+			var scrolling = false;
+			jobDiv.each(function (index,model) {
+				if(!$(model).parent().hasClass("ans-job-finished")) {
+					if(!scrolling) {
+						scrolling = true;
+						$("html,body").animate({scrollTop: $(model).offset().top}, 500);
+					}
+				}
+			})
+		}
+
+		function checkJob() {
+			closeDeleteWindow();
+			var jobDiv = $("#iframe").contents().find(".ans-job-icon");
+			var unFinishJob = false;
+
+			jobDiv.each(function (index,model) {
+				if(!$(model).parent().hasClass("ans-job-finished")) {
+					unFinishJob = true;
+					return unFinishJob;
+				}
+			})
+
+			return unFinishJob;
+		}
+
+		function showFreezePage() {
+			var freezePage2 = $('#freezePage2');
+			freezePage2.fullFadeIn();
+			freezePage2.addClass('maskFadeOut');
+			$('body').addClass('popOverflow');
+		}
+
+		function callback_course(response) {
+			pauseAll("#freezePage2",response,showFreezePage);
+		}
+
+		function continue_learning() {
+			reloadAndSetNewJs("#freezePage2");
+
+			$('.maskDiv').fullFadeOut();
+			$('.maskDiv').removeClass('maskFadeOut');
+			$('body').removeClass('popOverflow');
+		}
+
+		function showCheckDiv(isNext) {
+			if(isNext) {
+				$(".preChapter").hide();
+				$(".nextChapter").show();
+			}else {
+				$(".preChapter").show();
+				$(".nextChapter").hide();
+			}
+
+			var jobCountDiv = $('.jobFinishTip');
+			jobCountDiv.fullFadeIn();
+			jobCountDiv.addClass('maskFadeOut');
+			$('body').addClass('popOverflow');
+			if("0" == "1") {
+				$("#jobFinishTipFocus").focus();
+			}
+		}
+
+		var PCount = (function () {
+			var cur = 1, inner = changeDisplayContent;
+			return {
+				setIndex : function (index) {
+					cur = index;
+				},
+				next : function (count, chapterId, courseId, clazzid, knowledgestr,checkType) {
+					if (checkUnsave()) {
+						return;
+					}
+					if(typeof checkType != "undefined" && checkType && !courseEnded && checkJob()) {
+						showCheckDiv(true);
+						return;
+					}
+
+					cur = parseInt(cur);
+					count = parseInt(count);
+					$("#jumpCount").val(count);
+					$("#jumpType").val(1);
+					$("#curcount").val(cur);
+					if (cur >= count) {
+						window.bgAndBgLine = [];
+						renderingMarkData();
+						document.getElementById("mainid").innerHTML = "<div style=\"width:32px;height:32px;margin:0 auto;padding:300px 0\"><img src=\"/mooc-ans/images/courselist/loading.gif\" /></div>"
+						cur = 1;
+						jQuery.post(_HOST_CP2_ + "/mycourse/changeCapter",
+								{
+									courseId : courseId
+									, clazzid : clazzid
+									, chapterId : chapterId
+									, knowledgestr : knowledgestr
+									, type : 1
+									, date : new Date()
+									, mooc2 : 1
+								},
+								function (data) {
+									//alert(2025-0424-1038);
+									data = data.replace(/(^\s*)|(\s*$)/g, "");
+									var doc = document.getElementById("mainid");
+									jQuery(doc).html(data);
+									 if(document.getElementById("chapterFaceState") != null){
+			                        	   //人脸识别
+			                        	   return;
+			                           }
+									chapterId = document.getElementById("chapterIdid").value;
+									ai_stu_knowledgeId = chapterId;
+									jQuery("#coursetree .posCatalog_select").removeClass("posCatalog_active");
+									jQuery("#cur" + chapterId).addClass("posCatalog_active");
+									setChapterNumData(cur);
+									
+																		var el = $('#iframe');
+
+									window.ed_reinitIframe = function ed_reinitIframe() {
+										var iframe = el[0];
+
+										try {
+											var height = iframe.contentWindow.document.body.scrollHeight;
+                                                                                            if (parseInt(height) < 500) {
+                                                    height = '500px';
+                                                }
+                                            											el.attr('height', height);
+										} catch (ex) {
+										}
+									}
+									if ($("#openlock").length > 0) {
+										var count = document.getElementById("cardcount").value;
+										if (count == 1) {
+											setTimeout('openlockshow();', 2000);
+										}
+									}
+									if ($("#cur" + chapterId + " .orange01").length > 0) {
+										jQuery.ajax({
+											type : "get",
+											url : _HOST_CP2_ + "/edit/validatejobcount",
+											data : {
+												courseId : courseId
+												, clazzid : clazzid
+												, nodeid : chapterId
+											},
+										});
+									}
+									window.setInterval("ed_reinitIframe()", 200);
+									if ($(".tabCatalog #tit3").hasClass("active")) {
+										getClazzNote();
+									}
+									hideChangeBtn();
+								}
+						);
+					} else {
+						cur++;
+						inner(cur, count, chapterId, courseId, clazzid, knowledgestr);
+
+					}
+					scroll(0, 0);
+				},
+				previous : function (count, chapterId, courseId, clazzid, knowledgestr,checkType) {
+					if (checkUnsave()) {
+						return;
+					}
+
+					if(typeof checkType != "undefined" && checkType && !courseEnded && checkJob()) {
+						showCheckDiv(false);
+						return;
+					}
+
+					cur = parseInt(cur);
+					count = parseInt(count);
+					$("#jumpCount").val(count);
+					$("#jumpType").val(0);
+					$("#curcount").val(cur);
+					if (cur <= 1) {
+						window.bgAndBgLine = [];
+						renderingMarkData();
+						document.getElementById("mainid").innerHTML = "<div style=\"width:32px;height:32px;margin:0 auto;padding:300px 0\"><img src=\"/mooc-ans/images/courselist/loading.gif\" /></div>"
+						cur = 1;
+						jQuery.post(_HOST_CP2_ + "/mycourse/changeCapter",
+								{
+									courseId : courseId
+									, clazzid : clazzid
+									, chapterId : chapterId
+									, knowledgestr : knowledgestr
+									, type : 0
+									, date : new Date()
+									, mooc2 : 1
+								},
+								function (data) {
+									data = data.replace(/(^\s*)|(\s*$)/g, "");
+									var doc = document.getElementById("mainid");
+									jQuery(doc).html(data);
+									 if(document.getElementById("chapterFaceState") != null){
+			                        	   //人脸识别
+			                        	   return;
+			                           }
+									chapterId = document.getElementById("chapterIdid").value;
+									ai_stu_knowledgeId = chapterId;
+									jQuery("#coursetree .posCatalog_select").removeClass("posCatalog_active");
+									jQuery("#cur" + chapterId).addClass("posCatalog_active");
+									setChapterNumData(cur);
+									
+									var el = $('#iframe');
+									
+									window.ed_reinitIframe = function ed_reinitIframe() {
+										var iframe = el[0];
+
+										try {
+											var height = iframe.contentWindow.document.body.scrollHeight;
+                                                                                            if (parseInt(height) < 500) {
+                                                    height = '500px';
+                                                }
+                                            											el.attr('height', height);
+										} catch (ex) {
+										}
+									}
+									if ($("#openlock").length > 0) {
+										var count = document.getElementById("cardcount").value;
+										if (count == 1) {
+											setTimeout('openlockshow();', 2000);
+										}
+									}
+
+									if ($("#cur" + chapterId + " .orange01").length > 0) {
+
+										jQuery.ajax({
+											type : "get",
+											url : _HOST_CP2_ + "/edit/validatejobcount",
+											data : {
+												courseId : courseId
+												, clazzid : clazzid
+												, nodeid : chapterId
+											},
+										});
+									}
+
+									window.setInterval("ed_reinitIframe()", 200);
+									if ($(".tabCatalog #tit3").hasClass("active")) {
+										getClazzNote();
+									}
+									hideChangeBtn();
+								}
+						);
+					} else if (cur > 0) {
+						cur--;
+						inner(cur, count, chapterId, courseId, clazzid, knowledgestr);
+					}
+					scroll(0, 0);
+				}
+			}
+		})();
+
+		function showChapterVerificationCodeTip(){
+			closeChapterVerificationCode();
+			var width = $(document).width()-$('#selector').width();
+			WAY.box.show({ 'divid' : 'chapterVerificationCodeTip'});
+			$('.wmask').width(width);
+		}
+
+		function showChapterVerificationCode(){
+			var width = $(document).width()-$('#selector').width();
+			WAY.box.show({ 'divid' : 'chapterVerificationCode'});
+			$('.wmask').width(width);
+			chapterVerifyCode();
+		}
+
+		function  closeChapterVerificationCode(){
+			if($('.wmask').length == 0){
+				return;
+			}
+			WAY.box.hide();
+			$('#chapterVerificationCode').css('display','none');
+			$('#chapterVerificationCodeTip').css('display','none');
+		}
+
+		function chapterVerifyCode() {
+			try {
+				var identifyCodeRandom = $("#identifyCodeRandom");
+				if (identifyCodeRandom) {
+					identifyCodeRandom.val("");
+				}
+			} catch (e) {}
+			$("img[name='chapterNumVerCode']").attr("src", _HOST_CP2_ + "/verifyCode/studychapter?" + new Date().getTime());
+		}
+
+		function recordCheckedChapterParam(courseId,clazzid,chapterId,cpi){
+			if(!window.checked_chapter_param){
+				window.checked_chapter_param =  {} ;
+			}
+			checked_chapter_param.courseId = courseId;
+			checked_chapter_param.clazzid = clazzid;
+			checked_chapter_param.chapterId = chapterId;
+			checked_chapter_param.cpi = cpi;
+		}
+
+		function continueGetTeacherAjax(){
+			window.bgAndBgLine = [];
+			renderingMarkData();
+			var courseId = checked_chapter_param.courseId ;
+			var  clazzid = checked_chapter_param.clazzid ;
+			var chapterId =  checked_chapter_param.chapterId ;
+			var cpi = checked_chapter_param.cpi ;
+			var identifyCodeRandomObj = $("#identifyCodeRandom");
+			var chapterVerCode = identifyCodeRandomObj.val();
+			if(chapterVerCode == ''){
+				identifyCodeRandomObj.animate({
+					backgroundColor : 'pink'
+				}, 1000, function() {
+					identifyCodeRandomObj.animate({
+						backgroundColor : '#fcfcfc'
+					}, 500, null);
+				});
+				return;
+			}
+			getTeacherAjax(courseId,clazzid,chapterId,cpi,chapterVerCode,'',false);
+		}
+
+		function setChapterNumData(curChapterTabNum) {
+			var curChapterNum = jQuery(".posCatalog_select.posCatalog_active").find('.posCatalog_sbar').text();
+			window.curChapterNum = curChapterNum;
+			window.curChapterTabNum = curChapterTabNum;
+		}
+
+		function getTeacherAjax(courseId, clazzid, chapterId, cpi, chapterVerCode, objInfo ,toVideoComputer,disableReferRight) {
+			// 多次点击同一章节,标签页初始化1
+			PCount.setIndex(1);
+			closeChapterVerificationCode();
+			if (courseId == 0 || clazzid == 0 || chapterId == 0) {
+				alert("无效的参数！");
+				return;
+			}
+			if (typeof (cpi) == 'undefined') {
+				cpi = 0;
+			}
+
+
+			document.getElementById("mainid").innerHTML = "<div style=\"width:32px;height:32px;margin:0 auto;padding:300px 0\"><img src=\"/mooc-ans/images/courselist/loading.gif\" /></div>"
+
+			jQuery.get(_HOST_CP2_ + "/mycourse/studentstudyAjax",
+					{
+						courseId : courseId,
+						clazzid : clazzid,
+						chapterId : chapterId,
+						cpi : cpi,
+						verificationcode : chapterVerCode || '',
+						mooc2 : 1,
+						toComputer : toVideoComputer,
+						microTopicId: "0",
+						editorPreview: '0',
+						isPreviewVideo: 'false',
+                        videoWidth: '0',
+                        videoHeight: '0',
+                        targetVideoJobId: '',
+						cardIndex: '0'
+					},
+					function (data) {
+						ai_stu_knowledgeId = chapterId;
+						data = data.replace(/(^\s*)|(\s*$)/g, "");
+						var doc = document.getElementById("mainid");
+						jQuery(doc).html(data);
+						 if(document.getElementById("chapterFaceState") != null){
+                      	   //人脸识别
+                      	   return;
+                         }
+						var el = $('#iframe');
+											if ($("#openlock").length > 0) {
+							var count = document.getElementById("cardcount").value;
+							if (count == 1) {
+								setTimeout('openlockshow();', 2000);
+							}
+						}
+						if (videoNoteMid != "" && videoNoteCardId != "") {
+							var cardLi = $("#prev_tab .prev_ul li");
+							for (var i = 0; i < cardLi.length; i++) {
+								var cardItem = cardLi[i];
+								if ($(cardItem).attr("cardid") == videoNoteCardId) {
+									changeDisplayContent(i + 1, cardLi.length, chapterId, courseId, clazzid, '');
+									setTimeout("setVideoNoteTime()", 800);
+								}
+							}
+						}
+
+						if (crossId != "" && crossCardId != "") {
+							var cardLi = $("#prev_tab .prev_ul li");
+							for (var i = 0; i < cardLi.length; i++) {
+								var cardItem = cardLi[i];
+								if ($(cardItem).attr("cardid") == crossCardId) {
+									changeDisplayContent(i + 1, cardLi.length, chapterId, courseId, clazzid, '', crossId);
+									setTimeout("setVideoNoteTime()", 800);
+								}
+							}
+						}
+
+						$(".posCatalog_select ").removeClass("posCatalog_active");
+													$("#cur" + chapterId).addClass("posCatalog_active");
+						
+						setTimeout(function () {
+							setChapterNumData(1);
+						}, 100);
+
+						if (typeof objInfo != "undefined" && objInfo != '') {
+							var cardId = objInfo.cardId;
+							var cardLi = $("#prev_tab .prev_ul li");
+							for (var i = 0; i < cardLi.length; i++) {
+								var cardItem = cardLi[i];
+								if ($(cardItem).attr("cardid") == cardId) {
+									changeDisplayContent(i + 1, cardLi.length, chapterId, courseId, clazzid, '');
+									setTimeout("playFirstVideo()", 1000);
+								}
+							}
+						}
+
+						if ($("#cur" + chapterId + " .orangeNew").length > 0) {
+
+							jQuery.ajax({
+								type : "get",
+								url : _HOST_CP2_ + "/edit/validatejobcount",
+								data : {
+									courseId : courseId
+									, clazzid : clazzid
+									, nodeid : chapterId
+								},
+							});
+						}
+
+						if(disableReferRight == 1){
+							return;
+						}
+
+						var tab = $("#tab").val();
+
+
+						if (tab == 3) {
+							getClazzNote();
+							changePan('3');
+							} else if (tab == 4) {
+								getUserKnowledgeLabel();
+								changePan('4');
+						} else if (tab == 2) {
+							getChapterRightDiscuss();
+							changePan('2');
+						} else {
+							var hideCatalog = $("#hideCatalog").val();
+							if (hideCatalog == 1) {
+								$('div.tabCatalog>ul li').filter(function() {
+									return $(this).css('display') !== 'none';
+								}).first().click();
+							} else {
+								changePan('1');
+							}
+						}
+
+						hideChangeBtn();
+
+						if (tab != 2 && '2183' == "179952") {
+							getChapterRightDiscuss();
+						}
+					
+						window.ed_reinitIframe = function ed_reinitIframe() {
+							var iframe = el[0];
+
+							try {
+								var height = iframe.contentWindow.document.body.scrollHeight;
+																	if (parseInt(height) < 500) {
+										height = '500px';
+									}
+																el.attr('height', height);
+							} catch (ex) {
+							}
+						}
+						window.setInterval("ed_reinitIframe()", 200);
+					}
+			);
+			window.setInterval("setposition()", 200);
+			scroll(0, 0);
+					}
+
+		var getMouseX = function(event) {
+			event = event || window.event;
+			return event.pageX || (event.clientX + (document.documentElement.scrollLeft || document.body.scrollLeft));
+		};
+		var isGet = false;
+		function getChapterNextVideo(aId, isCardEnd) {
+			if (videoAutoPlay == 0) {
+				return;
+			}
+            if (typeof isCardEnd == "undefined") {
+                isCardEnd = 0;
+            }
+			var courseId = $("#curCourseId").val();
+			var knowledgeId = $("#curChapterId").val();
+			var cardId = $("#prev_tab .prev_ul li.active").attr("cardid");
+			var clazzId = $("#curClazzId").val();
+			var cpi = $("#curCpi").val();
+			jQuery.ajax({
+				"type" : "get",
+				"url" : _HOST_CP2_ + "/knowledge/getnextknowledgevideo",
+				"data" : {
+					"clazzId" : clazzId,
+					"courseId" : courseId,
+					"knowledgeId" : knowledgeId,
+					"cardId" : cardId,
+					"cpi" : cpi,
+					"attachmentId" : aId,
+                    "isCardEnd": isCardEnd
+				},
+				"dataType" : "json",
+				"success" : function(json) {
+					if (json.result == 1) {
+						var data = json.data;
+						if (data.nextvideo == 0) {
+							if (!isGet) {
+								getChapterNextVideo(aId);
+								isGet = true;
+							} else {
+								isGet = false;
+							}
+							return;
+						}
+						if (data.knowledgeId == knowledgeId) {
+							if (data.cardId == cardId) {
+								var videoIframes = $("#iframe").contents().find("iframe");
+								for (var i = 0; i < videoIframes.size(); i++) {
+									var vIframe = videoIframes[i];
+									var vObjId = $(vIframe).attr("objectid");
+									var vJobId = $(vIframe).attr("jobid") || "";
+									var vMid = $(vIframe).attr("mid");
+									if (typeof data.jobId == "undefined") {
+										data.jobId = "";
+									}
+									if (data.jobId == vJobId && data.objectId == vObjId && data.mid == vMid) {
+										$(vIframe).contents().find(".vjs-big-play-button").click();
+									}
+								}
+							} else {
+								var cardLi = $("#prev_tab .prev_ul li");
+								for (var i = 0; i < cardLi.length; i++) {
+									var cardItem = cardLi[i];
+									if ($(cardItem).attr("cardid") == data.cardId) {
+										changeDisplayContent(i + 1, cardLi.length, knowledgeId, courseId, clazzId, '');
+										setTimeout("playFirstVideo()", 1000);
+									}
+								}
+							}
+						} else {
+							var videoInfo = {
+								"cardId": data.cardId,
+								"jobId": data.jobId,
+								"objectId": data.objectId,
+								"mid": data.mid
+							}
+							getTeacherAjax(courseId, clazzId, data.knowledgeId, cpi, "", videoInfo,'false');
+						}
+						isGet = false;
+					} else {
+						alert(json.errorMsg);
+					}
+				}
+			});
+		}
+		$(function () {
+			var oMain = jQuery('.main').first();
+			var oSelector = jQuery('#selector');
+			var dialogContent = jQuery(".showcontent");
+			var oWestSpliter = jQuery('#selector .spliter.west').first();
+			var oEastSpliter = jQuery('#selector .spliter.east').first();
+			var iMinWidth = 303;
+			var sMask = '<div class="mask"></div>';
+
+			oWestSpliter.on('mousedown', function(event) {
+
+				event = event || window.event;
+
+				var iX = getMouseX(event);
+				var iWidth = oSelector.innerWidth();
+
+				oWestSpliter[0].setCapture && oWestSpliter[0].setCapture();
+
+				oMain.append(sMask);
+
+				jQuery(document).bind('mousemove', function(ev) {
+					ev = ev || window.event;
+
+					var iDX = getMouseX(ev) - iX;
+					var iToWidth = iWidth - iDX;
+
+					if (iToWidth < iMinWidth) {
+						return;
+					}
+
+					setCookie('selectwidth', iToWidth, 24 * 7, '/mycourse/studentstudy');
+
+
+					setCookie('selectwidth', iToWidth, 24 * 7, _HOST_CP2_ + '/mycourse/studentstudy');
+					oSelector.css('width', iToWidth + 'px');
+					dialogContent.css('width', iToWidth + 'px');
+				});
+
+				jQuery(document).bind('mouseup', function() {
+					oWestSpliter[0].releaseCapture && oWestSpliter[0].releaseCapture();
+					var oMask = jQuery('.mask').first();
+					oMask && oMask.remove();
+					jQuery(document).unbind('mousemove');
+					jQuery(document).unbind('mouseup');
+				});
+			});
+
+			oEastSpliter.on('mousedown', function(event) {
+				event = event || window.event;
+
+				var iX = getMouseX(event);
+				var iWidth = oSelector.innerWidth();
+
+				oEastSpliter[0].setCapture && oEastSpliter[0].setCapture();
+
+				oMain.append(sMask);
+
+				jQuery(document).bind('mousemove', function(ev) {
+					ev = ev || window.event;
+
+					var iDX = getMouseX(ev) - iX;
+					var iToWidth = iWidth + iDX;
+
+					if (iToWidth < iMinWidth) {
+						return;
+					}
+
+					setCookie('selectwidth', iToWidth, 24 * 7, '/mycourse/studentstudy');
+
+
+					setCookie('selectwidth', iToWidth, 24 * 7, _HOST_CP2_ + '/mycourse/studentstudy');
+					oSelector.css('width', iToWidth + 'px');
+					dialogContent.css('width', iToWidth + 'px');
+				});
+
+				jQuery(document).bind('mouseup', function() {
+					oEastSpliter[0].releaseCapture && oEastSpliter[0].releaseCapture();
+					var oMask = jQuery('.mask').first();
+					oMask && oMask.remove();
+					jQuery(document).unbind('mousemove');
+					jQuery(document).unbind('mouseup');
+				});
+			});
+		});
+		function jobflag(){
+			var ff = window.frames[0];
+			var jobNum = 0,finishedNum =0;
+			if(ff){
+				jobNum += jQuery(".ans-job-icon",ff.document).size();
+				finishedNum += jQuery(".ans-job-finished",ff.document).size();
+			}
+			if(jobNum > 2 && jobNum - finishedNum > 0){
+				jQuery("#jobhint").fadeIn();
+				jQuery("#jobhint span").html(jobNum - finishedNum);
+				var unfinished = jQuery(".ans-job-icon",ff.document).parent().not(".ans-job-finished");
+				if(unfinished.size()>0){
+					jQuery("#jobhint").attr("href","javascript:;");
+					jQuery("#jobhint").click(function(){
+						jQuery("html,body").animate({scrollTop:jQuery(jQuery(".ans-job-icon",window.frames[0].document).parent().not(".ans-job-finished")[0]).offset().top},200);
+					});
+				}else{
+					jQuery("#jobhint").attr("href","javascript:;");
+					jQuery("#jobhint span").html(0);
+					$("#jobhint").unbind("click");
+				}
+
+			}else{
+				jQuery("#jobhint").fadeOut();
+				jQuery("#jobhint").attr("href","javascript:;");
+				jQuery("#jobhint span").html(0);
+				$("#jobhint").unbind("click");
+			}
+		}
+
+		function jobflagOperation(){
+			try{
+				setTimeout(jobflag,6000);
+			}catch(e){console.log(e.message);}
+		}
+		function saveOr(isave){
+			videoNoteScrollTop = $("html,body").scrollTop();
+			if(isave == 1){
+				addOrUpdateClazzNote();
+			}else{
+				typeof MultiEditor != "undefined" && MultiEditor.setRichText('editor1','');
+				$(".formTopic").css("display", "none");
+			}
+			var popDeleShowHide = $('.popDeleShowHide');
+
+			popDeleShowHide.fullFadeOut();
+			popDeleShowHide.removeClass('maskFadeOut');
+			$('body').removeClass('popOverflow');
+			setTimeout(function() {
+				$("html,body").scrollTop(videoNoteScrollTop);
+			}, 500);
+		}
+		function closeTips(){
+			var popDeleShowHide = $('.popDeleShowHide');
+
+			popDeleShowHide.fullFadeOut();
+			popDeleShowHide.removeClass('maskFadeOut');
+			$('body').removeClass('popOverflow');
+		}
+	</script>
+
+</head>
+<body id="body-content"  >
+	<link rel="stylesheet" type="text/css" href="//mooc1.chaoxing.com/mooc-ans/mooc2/css/prompt.css?v=2023-0711-1500"/>
+<style>
+	.mask-no-bg{background:none!important;}
+	.mask-no-bg .popDiv{box-shadow: 0px 4px 36px rgba(0, 0, 0, 0.08);}
+	#workpop .popDiv{top:50% !important;transform: translate(-50%,-50%) !important;left:50% !important;bottom: auto !important;margin-top:0 !important;margin-left:0 !important}
+	#body-content .code-preview-div .popDiv{left:40%!important;top: 40%!important;}
+	#body-content .code-preview-div .wid840{width:840px!important;}
+</style>
+<div class="maskDiv" style="display:none;" id="workpop">
+	<div class="popDiv wid440 Marking">
+		<div class="popHead" id="workpopFocus" role="alertdialog" tabindex="0">
+			<a id="popCloseFocus"  href="javascript:;" class="popClose fr" onclick="popClickFunc()" tabindex="-1"><img src="//mooc1.chaoxing.com/mooc-ans/images/popClose.png" id="popCloseFocusImg" onkeydown="if(event.keyCode == 13){popCloseFocus();}" role="button" tabindex="-1" aria-label="关闭"/></a>
+			<p class="fl fs18 colorDeep" tabindex="0" role="option">提示</p>
+		</div>
+		<div class="het62"></div>
+		<p class="popWord fs16 colorIn" id="popcontent" tabindex="0"></p>
+
+		<div class="popBottom">
+			<a href="javascript:;" id="popok" class="jb_btn jb_btn_92 fr fs14" tabindex="0" role="button" aria-label="确定"></a>
+			<a href="javascript:;" id="popno" class="btnBlue btn_92_cancel fr fs14" onkeydown="popnoFocus();" tabindex="0" role="button" aria-label="取消"></a>
+		</div>
+		<div class="het72"></div>
+			</div>
+</div>
+
+<div class="mask-no-bg" style="display:none;" id="worktoast">
+	<div class="popDiv wid440 Marking" style="top: 30%;">
+		<div class="popHead">
+			<a href="javascript:;" class="popClose fr" onclick="toastClickFunc()"><img src="//mooc1.chaoxing.com/mooc-ans/images/popClose.png" /></a>
+			<p class="fl fs18 colorDeep">提示</p>
+		</div>
+		<div class="het62"></div>
+		<p class="popWord fs16 colorIn" id="toastcontent"></p>
+
+		<div class="popBottom">
+			<a href="javascript:;" id="toastok" class="jb_btn jb_btn_92 fr fs14"></a>
+			<a href="javascript:;" id="toastno" class="btnBlue btn_92_cancel fr fs14"></a>
+		</div>
+		<div class="het72"></div>
+	</div>
+</div>
+
+<div class="maskDiv" style="display:none;" id="hintPop">
+	<div class="popDiv wid440 Marking">
+		<div class="popHead">
+			<p class="fl fs18 colorDeep">提示</p>
+		</div>
+		<div class="het62"></div>
+		<p class="popWord fs16 colorIn" id="hintCon"></p>
+		<div class="popBottom">
+			<a href="javascript:;" id="hintOk" class="jb_btn jb_btn_92 fr fs14"></a>
+		</div>
+		<div class="het72"></div>
+	</div>
+</div>
+<script>
+function popClickFunc() {
+	$('#workpop').hide();
+	if($('.popSetupShowHide').length > 0){
+		$('.popSetupShowHide').fullFadeOut();
+	}
+}
+
+function toastClickFunc() {
+	$('#worktoast').hide();
+	if($('.popSetupShowHide').length > 0){
+		$('.popSetupShowHide').fullFadeOut();
+	}
+}
+
+
+function workPop(content, okTent, cancelTent, okcallback, cancelCallback) {
+	var ta = $("#workpop");
+
+	if($('.popSetupShowHide').length > 0){
+		$(".popSetupShowHide").fullFadeIn();
+	}
+
+	ta.show();
+	
+	$("#popcontent").html(content);
+	var popokHiddenRead = $("#popokHiddenRead");
+
+	var ok = $("#popok");
+	ok.html(okTent);
+	ok.unbind();
+	ok.on("click", function() {
+		// 无障碍单位走定制,延迟语音读取处理
+		if("0" == "1") {
+			popokHiddenRead.attr("tabindex","0");
+			if (content && content != '很遗憾，未达到及格线，请重做') {
+				popokHiddenRead.focus();
+			}
+			setTimeout(function() {
+				okcallback && okcallback(ta);
+				popokHiddenRead.attr("tabindex","-1")
+				ta.hide();
+				if($('.popSetupShowHide').length > 0) {
+					$(".popSetupShowHide").fullFadeOut();
+				}
+			}, 1000)
+		} else {
+			okcallback && okcallback(ta);
+			ta.hide();
+
+			if($('.popSetupShowHide').length > 0) {
+				$(".popSetupShowHide").fullFadeOut();
+			}
+		}
+	});
+
+	var cancel = $("#popno");
+	cancel.html(cancelTent);
+	cancel.unbind();
+	cancel.on("click", function() {
+		cancelCallback && cancelCallback(ta);
+		ta.hide();
+		if($('.popSetupShowHide').length > 0) {
+			$(".popSetupShowHide").fullFadeOut();
+		}
+	});
+	if("0" == "1") {
+		$("#workpopFocus").focus();
+	}
+}
+
+function workToast(content, okTent, cancelTent, okcallback, cancelCallback) {
+	var ta = $("#worktoast");
+
+	if($('.popSetupShowHide').length > 0) {
+		$(".popSetupShowHide").fullFadeIn();
+	}
+
+	ta.show();
+
+	$("#toastcontent").html(content);
+
+	var ok = $("#toastok");
+	ok.html(okTent);
+	ok.unbind();
+	ok.on("click", function() {
+		okcallback && okcallback(ta);
+		ta.hide();
+
+		if($('.popSetupShowHide').length > 0) {
+			$(".popSetupShowHide").fullFadeOut();
+		}
+	});
+
+	var cancel = $("#toastno");
+	cancel.html(cancelTent);
+	cancel.unbind();
+	cancel.on("click", function() {
+		cancelCallback && cancelCallback(ta);
+		ta.hide();
+		if($('.popSetupShowHide').length > 0) {
+			$(".popSetupShowHide").fullFadeOut();
+		}
+	});
+}
+
+function workHint(content, okTent, okcallback) {
+	var ta = $("#hintPop");
+
+	if($('.popSetupShowHide').length > 0) {
+		$(".popSetupShowHide").fullFadeIn();
+	}
+
+	ta.show();
+
+	$("#hintCon").html(content);
+
+	var ok = $("#hintOk");
+	ok.html(okTent);
+	ok.unbind();
+	ok.on("click", function() {
+		okcallback && okcallback(ta);
+		ta.hide();
+
+		if($('.popSetupShowHide').length > 0) {
+			$(".popSetupShowHide").fullFadeOut();
+		}
+	});
+}
+
+function popFocus() {
+	if("0" != "1") {
+		return;
+	}
+	$("#popCloseFocusImg").attr("tabindex","0");
+	$("#popCloseFocus").focus();
+}
+function popCloseFocus() {
+	if("0" != "1") {
+		return;
+	}
+	$('#workpop').hide();
+	if($('.popSetupShowHide').length > 0) {
+		$('.popSetupShowHide').fullFadeOut();
+	}
+	$("#popCloseFocusImg").attr("tabindex","-1");
+}
+function popnoFocus() {
+	if("0" != "1") {
+		return;
+	}
+	if(event.keyCode == 9){
+		popFocus();
+	}
+	if(event.keyCode == 13){
+		$("#popCloseFocusImg").attr("tabindex","-1");
+	}
+}
+
+</script>
+
+<div class="maskDiv preview-dialog code-preview-div" style="display: none;z-index: 1001">
+    <div class="popDiv wid840 Marking" style="left: 30%;top: 20%">
+        <div class="popHead">
+            <a href="javascript:void(0)" onclick="closeHtmlPage()" class="popClose fr"
+               style="display: inline-block;width: 18px;height: 18px;margin-top: 19px;"><img src="../../images/popClose.png"></a>
+            <p class="fl fs18 colorDeep">预览网页</p>
+        </div>
+        <div class="het62"></div>
+        <div class="previewHtml  preview-render-div" style="height:470px; overflow: auto;"></div>
+        <div class="het72"></div>
+    </div>
+</div>
+
+<script>
+
+    function proceduralCodePreview(questionId) {
+        var editor = codeEditors[questionId];
+        var pureTxt = editor.getValue();
+        var code = pureTxt;
+        code = UE.utils.html(code);
+        if(top && top.previewHtmlPage){
+            top.previewHtmlPage(code);
+        }else if(parent && parent.parent && parent.parent.parent && parent.parent.parent.previewHtmlPage){
+            parent.parent.parent.previewHtmlPage(code);
+        }else {
+            previewHtmlPage(code);
+        }
+    }
+
+    function previewHtmlPage(code) {
+        var renderTarget = document.querySelector('.preview-render-div');
+        if (!renderTarget) {
+            return;
+        }
+        renderTarget.innerHTML = '';
+
+        var iframe = document.createElement('iframe');
+        iframe.setAttribute('sandbox', 'allow-scripts');
+        iframe.style.width = '100%';
+        iframe.style.height = '600px';
+        iframe.style.border = 'none';
+        iframe.style.borderRadius = '8px';
+        iframe.style.background = 'white';
+        iframe.style.display = 'block';
+
+        iframe.srcdoc =
+                '<meta ' +
+                'http-equiv="Content-Security-Policy" ' +
+                'content="' +
+                'default-src \'none\'; ' +
+                'script-src \'unsafe-inline\'; ' +
+                'style-src \'unsafe-inline\'; ' +
+                'img-src data:; ' +
+                'connect-src \'none\'; ' +
+                'frame-src \'none\'; ' +
+                'object-src \'none\'; ' +
+                'form-action \'none\';' +
+                '"/>' +
+                '<script>' +
+                'window.alert=function(){};' +
+                'window.confirm=function(){return false;};' +
+                'window.prompt=function(){return null;};' +
+                'window.open=function(){return null;};' +
+                '</scr' + 'ipt>' +
+                code;
+        renderTarget.appendChild(iframe);
+        var previewDialog = renderTarget.closest('.preview-dialog');
+        if (previewDialog) {
+            previewDialog.style.display = 'block';
+        }
+    }
+
+    function closeHtmlPage() {
+        $('.preview-dialog').hide();
+    }
+</script><div class="bigImg"><img src=""></div>
+<div class="imgBg"></div>
+<a name="gotop"></a>
+	<input type="hidden" id="detectUrl" value="http://detect.chaoxing.com/api/passport2-onlineinfo.js?key=true&refer=http://i.mooc.chaoxing.com&fid=2183&_v="/>
+<input type="hidden" id="passSimulateValue" value="false"/>
+<input type="hidden" id="curCourseId" value="266218616"/>
+<input type="hidden" id="curChapterId" value="1223955188"/>
+<input type="hidden" id="curCpi" value="432104926"/>
+<input type="hidden" id="curClazzId" value="152328834"/>
+<input type="hidden" id="videoNoteMid" value=""/>
+<input type="hidden" id="isMicroCourse" value="false"/>
+<input type="hidden" id="tab" value="0"/>
+<input type="hidden" id="hideCatalog" value="0"/>
+
+<input type="hidden" name="videoRandomCollectTime" id="videoRandomCollectTime" value=""/>
+<input type="hidden" name="videoJobId" id="videoJobId" value=""/>
+<input type="hidden" name="chapterVideoObjectId" id="chapterVideoObjectId" value=""/>
+<input type="hidden" name="collectionTime" id="collectionTime" value=""/>
+<input type="hidden" name="mid" id="mid" value=""/>
+<input type="hidden" name="showKnowledgeSvg" id="showKnowledgeSvg" value="false"/>
+
+<div  class="left" >
+	<div class="content" style="background:none">
+									<div class="subNav z-index99">
+											<a href="https://mooc2-ans.chaoxing.com/mooc2-ans/mycourse/stu?courseid=266218616&clazzid=152328834&cpi=432104926&enc=8a084c347304c3a5e1ff5a9951bdee3d&t=1789370090877&pageHeader=1" id="contentFocus" class="subBack fl" tabindex="0"><i class="icon-BackIcon"></i>返回课程</a>
+										<h2>章节详情</h2>
+				</div>
+				<div style="height:40px;width:100%"></div>
+					
+					<div class="main prev_box  fanyaPreview_right  "
+				 id="mainid" style="margin-bottom:80px;width:auto;min-width:auto;box-shadow:none;"></div>
+				<div id="cardFocusEnd" tabindex="0"  aria-label="正文结束"  onkeydown="toNextFocus();"></div>
+	</div>
+</div>
+
+	<div  class="posChapter posChapter_right"  id="selector">
+            <div class="drag"><div class="drag_shizi"></div></div>
+        <div class="switchbtn"></div>
+            <div class="tabs">
+        <div class="tabCatalog">
+            <ul>
+                                    <li id="tit1" onclick="changePan('1');"   class="active"  >目录</li>
+                                            <li id="tit2" class=""                             onclick="getChapterRightDiscuss();changePan('2');" >讨论<span
+                                class="discussNum"></span></li>
+                                                                <li id="tit3" class=""                             onclick="getClazzNote();changePan('3');" >笔记</li>
+                                                                                    <li id="tit5" class="" onclick="renderingMarkData(1);changePan('5');" >标注</li>
+                                                </ul>
+            <div class="clear"></div>
+        </div>
+    
+		<div class="showcontent posChapter " style="background:#fff">
+		<div class="chapter" style=" display: block;  background: #fff;overflow-x: hidden;overflow-y: visible;" id="content1" tabindex="-1">
+			    <div class="dataSearch_chapter " style=" margin: 10px 20px 10px;">
+                    <div class="fl DySeleft">
+                                                     <a class="dataSearch_dele_chapter " href="javascript:" style="display: none;"></a>
+                                                <input tabindex="-1" type="text" id="searchChapterListByName" name="searchChapterListByName" value="" class="dataSearch_input_chapter fl " placeholder="搜索" style=""/>
+                        <input tabindex="-1" type="button" onclick="searchChapterListByName()" value="" class="dataSearch_bnt_chapter fl " style="top:18px"/>
+                    </div>
+                </div>
+			<div class="onetoone posCatalog " id="coursetree" style="overflow-y: auto;overflow-x: hidden;">
+				</div>
+			</div>
+			<div class="thiscontent posCatalog" id="content2" style="display:none">
+				<input type="hidden" value="0" id="isDigitalTextbook"/>
+				<div class="newTopic1" style="display: none;">
+					<span class="newTopic_bnt"><i></i>新建话题</span>
+					<div class="formTopic" style="display:none;">
+						<div class="formTopic_padding" id="formTopicScroll">
+							<div class="formTopic_title"><input type="text" value="" placeholder="请输入标题…" id="toplevelTextCommentTitle" name="toplevelTextCommentTitle"/></div>
+							<div class="formTopic_text">
+								<textarea class="formTopic_text_Scroll" id="toplevelTextCommentContent" name="toplevelTextCommentContent" placeholder="请输入话题正文…"></textarea>
+							</div>
+														<ul class="formTopic_pic" id="images_fileUploader_group"></ul>
+														<ul class="formTopic_docx" id="dataSource"></ul>
+						</div>
+						<div class="replyTopic">
+							<input type="hidden" id="resize" value="1"/>
+														<div class="imgUpload" id="fileUploader_group" style="width:24px;margin-right:20px"><input type="file" accept="image/*"></div>
+														<div class="fileUpload" id="addFileA" disable="false"><input type="file" accept="*" id="file" name="file" title="添加附件" onchange="if(initTopicAttachmentFile()){addTopicAttachmentFile('newPic','1789370090877', 'abbc3fcb472b32381554068d470951db', '363273819');}"></div>
+							<div class="jb_btn jb_btn_60 fr fs14" onclick="addgrouptopcomment('152328834','266218616','432104926');">发布</div>
+							<div class="replyQuxiao fr" onclick="cancel();">取消</div>
+						</div>
+					</div>
+				</div>
+				<div class="posDiscuss" id="posDiscussScroll" style="background: #fff;overflow: hidden;">
+				</div>
+			</div>
+			<div id="content3" class="thiscontent note" style="display:none">
+				<div class="newTopic1">
+					<span class="newTopic_bnt"><i></i>新建笔记</span>
+					<div class="formTopic" style="display:none;">
+						<input type="hidden" id="type" value="0"/>
+						<input type="hidden" id="noteVideoName" value=""/>
+						<input type="hidden" id="noteVideoTime" value=""/>
+						<input type="hidden" id="noteVideoJobId" value=""/>
+						<input type="hidden" id="noteVideoObjectId" value=""/>
+						<input type="hidden" id="videoNoteCid" value=""/>
+						<div class="Note_name"></div>
+						<div class="wrap formNote_padding">
+							<div class="multieditor" id="editor1"></div>
+							<div class="dotNote_box">
+								<div class="dotNote_dadian "></div>
+								<div class="dotNote_con">
+									<div class="dotNote_padd">
+										<div class="dotNote_text">点击“打点”可以继续插入当前视频播放时间点</div>
+										<div class="dotNote_bnt"><a class="dotNote_blue" href="javascript:;">知道了</a></div>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div class="replyTopic">
+							<div class="jb_btn jb_btn_60 fr fs14 " onclick="addOrUpdateClazzNote()">发布</div>
+							<div class="replyQuxiao fr">取消</div>
+						</div>
+					</div>
+				</div>
+				<div class="posDiscuss" id="posNoteScroll">
+					<div class="tableDiscuss">
+					</div>
+				</div>
+				<div class="noTopic" style="display:none">暂无笔记, 新建一个吧～ </div>
+			</div>
+
+
+			<div id="content4" class="bookMakBx chapterlabellist" style="display:none">
+
+			</div>
+
+			<div id="content5" class="renderingMarkCls" style="display:none">
+				<div class="comment-list-box">
+					<div class="comment-list-item">
+						<ul class="comment-list-ul">
+							
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+		<div id="successTip"  class="zad71">
+		已保存	</div>
+	<div id="errorTip"  class="zad71">
+	</div>
+    <div class="DownloadaDiv" id="DownloadaDiv">
+
+    </div>
+	<a href="#" id="jobhint" class="jobhint" style="display:none;">
+		<span style="display:block;width:45px;height:45px;text-align:center;font-size:20px;line-height:45px;color:#fff;">0</span>
+	</a>
+</div>
+
+<div style="height: 100%;display:none;" id="messagedialogepar" class="bgmask">
+</div>
+<div style="margin-top: -255.5px;" class="mypop" id="messagedialoge"></div>
+<div class="AlertCon02" id="validate" style="width:368px;height:139px;display:none;" align="center" >
+	<table class="zc_table">
+		<tr>
+			<td colspan="3">
+				<span class="sp_h2">请输入验证码：</span>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2">
+				<input class="zc_input32" name="code" id="code" type="text"
+					   onkeydown="keydownSubmit(event)"
+					   onfocus="hiddenError('mod_error')"/>
+			</td>
+			<td class="zc_vercode_ac">
+				<span class="zc_verify" onclick="getVarCode();">
+				<img src="/mooc-ans/kaptcha-img/code" width="124" height="28" id="imgVerCode"/></span>
+				<a href="javascript:void(0);" onclick="getVarCode();" style="color:#02bffd">看不清</a>
+			</td>
+		</tr>
+		<tr>
+			<td colspan="2" style="text-align: left;">
+			<span class="zc_btn">
+				<a href="javascript:void(0);" id="sub">确定</a>
+			</span>
+			</td>
+			<td></td>
+		</tr>
+	</table>
+</div>
+<div class="bigImgDiv">
+	<div class="bigImgMask"></div>
+	<div class="bigImgClose"></div>
+</div>
+<!-- 人脸采集  -->
+
+<!-- 章节验证码  -->
+<div style="width:385px;height:auto;display:none;" class="AlertCon02" id="chapterVerificationCode">
+	<h3 class="clearfix"><a class="closed02 fr" href="javascript:void(0)" onclick="closeChapterVerificationCode();"></a></h3>
+	<div class="con03">
+		<p style="margin-right: 78px;font-size: 15px;">为保障您的账号安全，请输入验证码</p>
+		<div class="marTop20"></div>
+		<div class="DySearch" style="width:303px;padding-left:16px;" id="randomIdentifyCodeInp">
+			<div class="DySeleft fl" style="border:none;">
+				<input type="text"  class="Inp fl" id="identifyCodeRandom" name="identifyCodeRandom" style="width:138px;border:1px solid #ccc;border-radius:4px;" placeholder="请输入验证码" vlaue="" autofocus = "autofocus">
+				<img src="/mooc-ans/verifyCode/studychapter" class="fl" width="93" height="28" name="chapterNumVerCode" style="display: block; position: absolute; left: 210px;" onclick="chapterVerifyCode()"/>
+				<a href="javascript:" onclick="chapterVerifyCode()" style="float:right; font-size: 9pt; color: #7b9e31; text-decoration: underline;line-height:30px;">看不清</a>
+			</div>
+		</div>
+		<div class="marTop30" id="startTestDiv">
+			<a class="bluebtn"  href="javascript:void(0)" onclick="continueGetTeacherAjax();">继续学习</a>
+		</div>
+	</div>
+</div>
+
+<!-- 章节验证码--提示框  -->
+<div style="width:385px; height:144px;display:none;" class="AlertCon02" id="chapterVerificationCodeTip">
+	<h3 class="clearfix"><a class="closed02 fr" href="javascript:void(0)" onclick="WAY.box.hide();$('#chapterVerificationCodeTip').css('display','none');showChapterVerificationCode();" ></a></h3>
+	<div class="con03">
+		<p id="tipIdentifyCode">验证码不正确，请重新输入</p>
+		<div class="marTop30">
+			<a class="bluebtn" href="javascript:void(0)" onclick="WAY.box.hide();$('#chapterVerificationCodeTip').css('display','none');showChapterVerificationCode();">确定</a>
+		</div>
+	</div>
+</div>
+<div class="maskDiv popDeleShowHide maskFadeOut" style="display: none" id="saveTips">
+	<div class="popDiv wid440 popMove">
+		<div class="popHead">
+			<a href="javascript:" class="popClose fr popMoveDele" onclick="closeTips()"><img src="//mooc1.chaoxing.com/mooc-ans/images/courselist/qr-fc-popClose.png"></a>
+			<p class="fl fs18 colorDeep">提示</p>
+		</div>
+		<div class="het62"></div>
+		<p class="popWord2 fs16 colorIn" id="noteSaveTips">您还有章节笔记未保存，是否保存？</p>
+		<div class="popBottom">
+			<a href="javascript:" class="jb_btn jb_btn_92 fr fs14" id="batchdelete" onclick="saveOr(1)">保存</a>
+			<a href="javascript:" class="btnBlue btn_92_cancel fr fs14 popMoveDele" onclick="saveOr(0)">不保存</a>
+		</div>
+		<div class="het72"></div>
+	</div>
+</div>
+<div id="cozeAskId"></div>
+<!-- 上一章下一章记录用的便于人脸识别后返回数据 -->
+<input type="hidden" name="jumpCount" id="jumpCount" value="0" />
+<input type="hidden" name="jumpType" id="jumpType" value="0" />
+<input type="hidden" name="curcount" id="curcount" value="0" />
+<input type="hidden" name="currentTime" id="currentTime" value="1789370090877" />
+<input type="hidden" name="uploadEnc" id="uploadEnc" value="abbc3fcb472b32381554068d470951db" />
+<input type="hidden" name="uploadUid" id="uploadUid" value="363273819" />
+<script type="text/javascript">
+    function randomUUID () {
+        var s = [];
+        var hexDigits = "0123456789abcdef";
+        for (var i = 0; i < 36; i++) {
+            s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
+        }
+        s[14] = "4";
+        s[19] = hexDigits.substr((s[19] & 0x3) | 0x8, 1);
+        s[8] = s[13] = s[18] = s[23] = "-";
+        var uuid = s.join("");
+        return uuid;
+    }
+    //附件编码
+    function b64EncodeUnicode (str) {
+        //xss过滤规则
+        var xssReg = new RegExp("(\\baler(?=t\\s*\\())|(\\bhref(?=\\s*=\\s*['\"]?\\s*javascript:))|(\\bsrc(?=\\s*=\\s*['\"]?\\s*javascript:))|((data|src)\\s*=['\"]?\\s*data(?=:)(?!:\\s*image))|(^[^<]*<(?=/textarea\\s*>))|(<(?=(script)|(/script)))|(<(?=(details)|(/details)))|(\\b(onstart|onafterprint|onbeforeprint|onbeforeunload|onerror|onhaschange|onload|onmessage|onoffline|ononline|onpagehide|onpageshow|onpopstate|onredo|onresize|onstorage|onundo|onunload|onblur|onchange|oncontextmenu|onfocus|onformchange|onforminput|oninput|oninvalid|onreset|onreset|onsubmit|onkey\\w*|onclick|ondblclick|ondrag\\w*|ondrop|onmouse\\w*|onscroll|ontouch\\w*)(?=(\\s*)=))",'gi');
+        str=str.replace(xssReg,function(){
+            return arguments[0] + '　';
+        })
+        return btoa(encodeURIComponent(str))
+    }
+function writeTextNote(text) {
+    if (typeof MultiEditor == "undefined") {
+        return;
+    }
+    if (typeof text == "undefined" || text == "") {
+        return;
+    }
+    getClazzNote && getClazzNote();
+    changePan && changePan('3');
+    if ($(".formTopic").size() > 0) {
+        $(".formTopic").css("display", "block");
+    }
+    var noteName = $(".posCatalog_select.posCatalog_active").children("span").attr("title");
+    $("#noteTitle").val(noteName);
+
+    $("#editor1 .edui-for-screenshot").show();
+    $(".dotNote_box").show();
+    var courseId = "266218616";
+    var clazzId = "152328834";
+    var cpi = "432104926";
+    var logo = 'https://p.ananas.chaoxing.com/star3/270_169c/1e98dba9cefab2aa68d72be032e5b5e3.jpg';
+    var knowledgeId = $("#chapterIdid").val();
+    var cardId = $("#prev_tab .prev_ul li.active").attr("cardid");
+    var cid = $("#videoNoteCid").val();
+    if (cid == "") {
+        cid = guid2();
+    }
+    var transferLink = _HOST_CP1_ + "/knowledge/chaptertransfer?courseid=" + courseId + "&knowledgeid=" + knowledgeId + "&clazzid="+ clazzId + "&cardid=" + cardId + "&cpi=" + cpi;
+    var insertType = 'insertWeb'; //每个附件的值不同
+    var attachmentHtml  =  window.location.protocol + '//noteyd.chaoxing.com/attachment/' + insertType + '.html';
+    var json = {
+        cid:cid,
+        "attachmentType": 25,
+        "att_web": {
+            "chapter": "历史评价——不可观也",
+            "content": "历史评价——不可观也",
+            "delete": false,
+            "extract": text,
+            "logo": logo,
+            "resType": 0,
+            "showContent": 1,
+            "title": "中国古典小说鉴赏",
+            "toolbarType": 2,
+            "type": 0,
+            "url": transferLink
+        }
+    };
+    var name = b64EncodeUnicode(JSON.stringify(json))
+    var html = "<br><div class='editor-iframe' contenteditable='false'><iframe frameborder='0' scrolling='no' allowfullscreen='true' src='" + attachmentHtml + "' name='" + name + "' cid='" + cid + "' class='attach-module attach-" + insertType + "' module='" + insertType + "'></iframe></div>";
+    MultiEditor.insertHTML('editor1', html);
+    $("#videoNoteCid").val(cid);
+}
+</script>
+
+<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/js/courselist/tabs.js?v=2025-0424-1038"></script>
+<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/js/courselist/recognize.js?v=2025-0424-1038"></script>
+<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/js/courselist/inputDefault.js?v=2025-0424-1038"></script>
+<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/js/courselist/player.js?v=2025-0424-1038"></script>
+<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/js/courselist/util.js?v=2025-0424-1038"></script>
+<script src="//mooc1.chaoxing.com/mooc-ans/js/chapterDiscussUploadCourseImg.js?v=2018-0130-1400"></script>
+<script src="//mooc1.chaoxing.com/mooc-ans/js/swfupload/swfupload.js?v=2023-0822-1025"></script>
+<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/js/swfupload/swfupload.queue.js"></script>
+<link href="//mooc1.chaoxing.com/mooc-ans/css/courselist/popwin.css?v=2025-0424-1038" rel="stylesheet" type="text/css" />
+<link href="//mooc1.chaoxing.com/mooc-ans/css/note/chapterNote.css" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/mooc2/js/poplayout.js"></script>
+<script type="text/javascript">
+	// 点击了写笔记的iframe
+	var videoNoteFrame = null;
+	var videoNoteScrollTop = 0;
+	var currentTime = $("#currentTime").val();
+	var uploadEnc = $("#uploadEnc").val();
+	var uploadUid = $("#uploadUid").val();
+	// 提供给笔记的截屏方法
+	var insertEditorScreenShot = function() {
+		if (typeof MultiEditor == "undefined") {
+			return;
+		}
+		if (!videoNoteFrame) {
+			return;
+		}
+		videoNoteScrollTop = $("html,body").scrollTop();
+		var player = videoNoteFrame.contentWindow.videojs("video");
+		if ($(videoNoteFrame).contents().find(".vjs-big-play-button").css("display") != "none") {
+			var screenShot = player.poster_;
+			if (screenShot == "") {
+				return;
+			}
+			MultiEditor.insertHTML('editor1','<div class="drag-image-wrap" contenteditable="false"><div class="editor-image" contenteditable="false" draggable="true"><img src="' + screenShot + '"></div></div><p><br></p>');
+			setTimeout(function(){
+				$("html,body").scrollTop(videoNoteScrollTop);
+			}, 300);
+			return;
+		}
+		var video = $(videoNoteFrame).contents().find("#video_html5_api")[0] // 获取video节点
+		var canvas = document.createElement("canvas") // 创建canvas节点
+		var w = window.innerWidth
+		var h = (window.innerWidth / 16) * 9
+		canvas.width = w
+		canvas.height = h // 设置宽高
+		const ctx = canvas.getContext("2d")
+		ctx.drawImage(video, 0, 0, w, h) // video写入到canvas
+		var imgUrl = canvas.toDataURL("image/png")
+		imgUrl = imgUrl.replace("data:image/png;base64,", "");
+		// 上传云盘
+		$.ajax({
+			type: "post",
+			url : ServerHost.uploadDomain + "/edit/uploadBase64Img",
+			dataType:'json',
+			xhrFields: {withCredentials: true},
+			data : {
+				Filedata: imgUrl,
+				t: currentTime,
+				uid: uploadUid,
+				enc2: uploadEnc
+			} ,
+			success: function(data){
+				var objectId = "";
+				if(data.status) {
+					objectId = data.objectId;
+					if (objectId != "") {
+						var objId = objectId.substring(objectId.lastIndexOf('/') + 1);
+						if (objId.indexOf('.') > -1) {
+							objId = objId.substring(0, objId.indexOf('.'))
+						}
+						MultiEditor.insertHTML('editor1','<div class="drag-image-wrap" contenteditable="false"><div class="editor-image active" contenteditable="false" draggable="true"><img src="' + objectId + '" objectid="' + objId + '" ></div></div><p><br></p>');
+					}
+					setTimeout(function(){
+						$("html,body").scrollTop(videoNoteScrollTop);
+						try {
+							var scrollHeight = $("#editor1 iframe").contents().find(".editor-image.active").height() + 28;
+							var scrollTop = $(".formNote_padding").scrollTop();
+							$(".formNote_padding").scrollTop(scrollTop + scrollHeight);
+							$("#editor1 iframe").contents().find(".editor-image").removeClass("active");
+						} catch (e) {
+						}
+					}, 300);
+				}
+			}
+		})
+	}
+	var toolbars = [
+		'screenshot', //截屏，需提供插入截屏图片的方法insertEditorScreenShot
+		'Undo', //撤销
+		'Redo',//重做
+		'formatmatch', //格式刷
+		'removeformat', //清楚格式
+		'|',//
+		'paragraph',//段落与标题
+		'|', //
+		'fontfamily',//字体
+		'|',
+		'fontsize',//字号
+		'bold',//加粗
+		'italic',//斜体
+		'underline',//下划线
+		'strikethrough',//删除线
+		'|',
+		'forecolor',//字体颜色
+		'backcolor',//字体背景色
+		'|',
+		'insertunorderedlist',//无序列表
+		'insertorderedlist',//有序列表
+		'checkbox',//勾选框
+		'justify',//字体对齐
+		'indent',//缩进
+		'lineheight',//行间距
+		'autotypeset',//自动排版
+		'|',
+		'blockquote',//引用
+		'callout',//高亮块
+		'horizontal',//分割线
+		'insertcode',//代码块
+		'edittable',//表格边框
+		'settablebackground',//表格背景色
+		'insertrow',//向上插入行
+		'insertrownext',//向下插入行
+		'deleterow',//删除行
+		'insertcol',//向左插入列
+		'insertcolnext',//向右插入列
+		'deletecol',//删除列
+		'mergecells',//合并单元格
+		'splittocells',//拆分单元格
+		'inserttable',//插入表格
+				'onlinetable',//电子表格
+		'mindmap',//思维导图
+				'spechars',//特殊符号
+		'mathml',//公式
+		'attachment',//附件
+		'insertimage',//图片
+		'cloud',//云盘
+		'notes',//笔记
+		'link',//链接
+		'draw'
+	];
+
+	// 初始化笔记编辑器
+	typeof MultiEditor != "undefined" && MultiEditor.initEditor({
+		'editorid': 'editor1',
+		content: '',
+		'toolbars': toolbars,
+		'editorheight': 300
+	},function () { //编辑器加载完成后调用
+		var placeholder = "标题";
+		var noteTitle = $(".posCatalog_select.posCatalog_active").children("span").attr("title");
+		var titleEl = '<div class="titleEl"><input type="text" value="' + noteTitle + '" id="noteTitle" placeholder="' + placeholder + '"/></div>';
+		$(".formTopic .edui-editor-toolbarbox").after(titleEl);
+		$(".formTopic .titleEl").on("focus", "input", function(){
+			$(this).parent().addClass('focus');
+		}).on("blur","input",function(){
+			$(this).parent().removeClass('focus');
+		});
+	},function (msg) { //内容变化回调
+		// console.log(msg)
+	});
+	var pid = getCookie('pid');//得到联盟id即pid
+	//如果是安徽联盟，则隐藏联系客服
+	if(pid != undefined && pid == 348){
+		$("#isAhlm").hide();
+	}
+	//如果是无锡职业技术学院-控制技术学院，则隐藏联系客服
+	var fid = getCookie('fid');
+	if(fid != undefined && fid == 159){
+		$("#isAhlm").hide();
+	}
+	// 目录搜索标记 0:非搜索, 1:搜索
+	var onSearchChapterFlag = 0;
+    var getMouseX = function(event) {
+        event = event || window.event;
+        return event.pageX || (event.clientX + (document.documentElement.scrollLeft || document.body.scrollLeft));
+    };
+	var en = getCookie('browserLocale');
+	if (en && en == 'en_US') {
+		$(".formNote_text .kc_notes_area").addClass("en");
+	}
+    $(function () {
+        var oMain = $('.prev_box').first();
+        var oSelector = $('.posChapter');
+        var oWestSpliter = $('.posChapter_right .drag_shizi').first();
+        var oEastSpliter = $('.posChapter_left .drag_shizi').first();
+        var iMinWidth = 300;
+        var sMask = '<div class="mask"></div>';
+
+        oWestSpliter.on('mousedown', function(event) {
+            event = event || window.event;
+            var iX = getMouseX(event);
+            var iWidth = oSelector.innerWidth();
+            oWestSpliter[0].setCapture && oWestSpliter[0].setCapture();
+            oMain.append(sMask);
+            $(document).bind('mousemove', function(ev) {
+                ev = ev || window.event;
+                var iDX = getMouseX(ev) - iX;
+                var iToWidth = iWidth - iDX;
+                if (iToWidth < iMinWidth){
+                    return;
+                }
+                //setCookie('selectwidth', iToWidth, 24 * 7, '/mycourse/teacherstudy');
+setCookie('selectwidth', iToWidth, 24 * 7, _HOST_CP2_ + '/mycourse/teacherstudy');
+                oSelector.css('width', iToWidth + 'px');
+				var boxW = iToWidth - 28;
+				$(".edui-editor-toolbarbox").css("cssText", "width:" + boxW + "px!important");
+				var marginT = $(".edui-editor-toolbarbox").height();
+				$(".titleEl").css("cssText", "margin-top:" + marginT + "px!important");
+            });
+
+            $(document).bind('mouseup', function() {
+                oWestSpliter[0].releaseCapture && oWestSpliter[0].releaseCapture();
+                var oMask = $('.mask').first();
+                oMask && oMask.remove();
+                $(document).unbind('mousemove');
+                $(document).unbind('mouseup');
+            });
+        });
+
+        oEastSpliter.on('mousedown', function(event) {
+            event = event || window.event;
+            var iX = getMouseX(event);
+            var iWidth = oSelector.innerWidth();
+            oEastSpliter[0].setCapture && oEastSpliter[0].setCapture();
+            oMain.append(sMask);
+            $(document).bind('mousemove', function(ev) {
+                ev = ev || window.event;
+                var iDX = getMouseX(ev) - iX;
+                var iToWidth = iWidth + iDX;
+                if (iToWidth < iMinWidth) {
+                    return;
+                }
+                //setCookie('selectwidth', iToWidth, 24 * 7, '/mycourse/teacherstudy');
+setCookie('selectwidth', iToWidth, 24 * 7, _HOST_CP2_ + '/mycourse/teacherstudy');
+                oSelector.css('width', iToWidth + 'px');
+				var boxW = iToWidth - 28;
+				$(".edui-editor-toolbarbox").css("cssText", "width:" + boxW + "px!important");
+				var marginT = $(".edui-editor-toolbarbox").height();
+				$(".titleEl").css("cssText", "margin-top:" + marginT + "px!important");
+            });
+
+            $(document).bind('mouseup', function() {
+                oEastSpliter[0].releaseCapture && oEastSpliter[0].releaseCapture();
+                var oMask = $('.mask').first();
+                oMask && oMask.remove();
+                $(document).unbind('mousemove');
+                $(document).unbind('mouseup');
+            });
+        });
+    });
+
+	function sendStuJobInfoMsg(data) {
+		try {
+			window.opener?.postMessage({
+				module: "KNOWLEDGE",
+				type: 'JOB_FINISH_INFO',
+				data: data
+			}, '*');
+		} catch (e) {
+			console.log(e);
+		}
+	}
+
+	$(document).ready(function(){
+		
+		function setwidth(){
+			if(screen.width <= 1024){$('.switchbtn').click();}
+
+			var selectwidth = getCookie('selectwidth');
+
+			if (selectwidth) {
+				jQuery('#selector').css('width', 300 + 'px');
+			}
+		}
+		setwidth();
+		//目录整体隐藏显示
+		function switchbtn(posLeft,posRight,boxLeft,boxRight){
+			$('.switchbtn').click(function(){
+				var zjWidth = $('.posChapter').width()+8;
+				if($(this).hasClass('switchbtn_cur')){
+					$(posLeft).animate({left:0})
+					$(posLeft).find('.switchbtn').animate({right:0})
+					$(posRight).animate({right:0})
+					$(posRight).find('.switchbtn').animate({right:0})
+					$(boxLeft).animate({padding:'0 0 0 ' + zjWidth + 'px'})
+					$(boxRight).animate({padding:'0 ' + zjWidth + 'px 0 0'})
+					$(this).removeClass('switchbtn_cur')
+				} else{
+					$(posLeft).animate({left:'-'+zjWidth})
+					$(posLeft).find('.switchbtn').animate({right:'-40px'})
+					$(posRight).animate({right:'-'+zjWidth})
+					$(posRight).find('.switchbtn').animate({right:zjWidth})
+					$(boxLeft).animate({padding:'0px'})
+					$(boxRight).animate({padding:'0px'})
+					$(this).addClass('switchbtn_cur')
+				}
+			})
+		}
+		switchbtn('.posChapter_left','.posChapter_right','.fanyaPreview_left','.fanyaPreview_right')
+
+        $('.posChapter_right .qcatalog_menuicon').click(function(){
+            if($(this).hasClass('active')){
+                var bodyWidth = $("body").width();
+                if (leftZD != 0) {
+                    if (parseInt(bodyWidth) < 1200) {
+                        $('#DownloadaDiv').animate({right:'348px'})
+                        $('#JS_back_to_top').animate({right:'348px'})
+                    } else {
+                        $('#DownloadaDiv').animate({right:'460px'})
+                        $('#JS_back_to_top').animate({right:'460px'})
+                    }
+                }
+            } else{
+                $('#DownloadaDiv').animate({right:'20px'})
+                $('#JS_back_to_top').animate({right:'20px'})
+            }
+        })
+        //目录整体隐藏显示
+        function switchMenuiconBtn(posLeft,posRight,boxLeft,boxRight){
+            $('.qcatalog_menuicon').click(function(){
+                var zjWidth = $('.posChapter').width();
+                if($(this).hasClass('active')){
+                    $(posLeft).animate({left:0})
+                    $(posRight).animate({right:0})
+                    $(boxLeft).animate({padding:'0 0 0 ' + zjWidth + 'px'})
+                    $(boxRight).animate({padding:'0 ' + zjWidth + 'px 0 0'})
+                    $(this).removeClass('active')
+                    // $(".w_content").removeAttr("style");
+                    if ($(".qcatalog_menuicon").hasClass("active")) {
+                        $(".w_content").removeAttr('style');
+                    } else {
+                        $(".w_content").css("padding", "0 60px");
+                        $(".w_content").css("width", "auto");
+                        $(".w_content").css("min-width", "906px");
+                        $(".w_content").css("margin", "0 auto");
+                    }
+                } else{
+                    $(posLeft).animate({left:'-'+zjWidth})
+                    $(posRight).animate({right:'-'+zjWidth})
+                    $(boxLeft).animate({padding:'0px'})
+                    $(boxRight).animate({padding:'0px'})
+                    $(this).addClass('active')
+                    $(".w_content").removeAttr('style');
+
+                }
+            })
+        }
+        switchMenuiconBtn('.posChapter_left','.posChapter_right','.fanyaPreview_left','.fanyaPreview_right')
+
+		$('.kc_notes_upDown').on('click',function(){
+			var _this = $(this).parent().next().next();
+			if(_this.is(':visible')){
+				_this.slideUp(200)
+				$(this).text('展开')
+			}else{
+				_this.slideDown(200)
+				$(this).text('收起')
+			}
+		})
+		var notesBox = $('.kc_notes').parent().innerHeight()
+		$('.kc_notes').css('height',notesBox)
+		$('.maskLayer').css('height',$(document).innerHeight())
+		$('.pop_notes').css('top',($(window).innerHeight()-$('.pop_notes').innerHeight())/2)
+
+		// 搜索框添加 X
+        $('#content1').on('input', '.dataSearch_input_chapter', function () {
+            var searchValue = $(this).val().trim();
+            if (searchValue == "undefined" || searchValue === "") {
+                $(this).parent().find(".dataSearch_dele_chapter").hide()
+            } else {
+                $(this).parent().find(".dataSearch_dele_chapter").show()
+            }
+        })
+
+        $('#content1').on('click', '.dataSearch_dele_chapter', function () {
+            $('#searchChapterListByName').val("")
+            $(this).hide()
+			onSearchChapterFlag = 1;
+            onReadComplete1();
+        })
+
+        //回车事件绑定
+        $('#content1').bind('keyup', '#searchChapterListByName', function (event) {
+            if (event.keyCode == "13") {
+				onSearchChapterFlag = 1;
+                //回车执行查询
+                onReadComplete1();
+            }
+        });
+
+		//目录展开收起
+		$('#content1').on('click', '.posCatalog_title', function () {
+			var _this = $(this).parent().next()
+			if (_this.is(':visible')) {
+				_this.slideUp(300)
+				$(this).removeClass('posCatalog_rotate')
+			} else {
+				_this.slideDown(300)
+				$(this).addClass('posCatalog_rotate')
+			}
+			posCatalogScroll()
+		})
+		$('#content1').on('click', '.posCatalog_name', function () {
+			$('.posCatalog_name').parent().removeClass('posCatalog_active')
+			$(this).parent().addClass('posCatalog_active')
+		})
+
+			});
+
+    var searchChapterListByName = function() {
+		onSearchChapterFlag = 1;
+      	onReadComplete1();
+    }
+
+    var onReadComplete =function(){
+        setTimeout('onReadComplete1();',6000);
+    }
+
+	function linkMicroNode(newTopicId) {
+		top.window.location.href =  ServerHost.mooc2Domain + "/mooc2-ans/coursetopic/getintomicrocoursedata?courseid=266218616&clazzid=152328834&cpi=432104926&topicModelId=0&redirect=true&ut=s&microTopicId=" + newTopicId;
+	}
+
+	function replaceTopicName() {
+		var searchChapterListByName = document.getElementById("searchChapterListByName").value.trim();
+		var searchList = $(".searchTopic");
+		if(typeof searchList == "undefined" || searchList.length == 0) {
+			return;
+		}
+
+		for(var i =0;i< searchList.length; i ++){
+			var search = searchList.get(i);
+			var value = $(search).text();
+			value = value.replace(searchChapterListByName, '<span class="dataSearch_chapter_searchName">' + searchChapterListByName + '</span>');
+			$(search).html(value);
+		}
+	}
+
+	function initMicroNodeList() {
+		try {
+			var active = $(".posCatalog_active");
+			if(typeof active == "undefined" || active.length == 0) {
+				return;
+			}
+
+			var parent = active.parents(".posCatalog_level_first");
+			if(typeof parent == "undefined" || parent.length == 0) {
+				return;
+			}
+
+			parent.prev().find(".posCatalog_name").addClass("posCatalog_rotate");
+			parent.show();
+
+			$('#content1').animate({
+				scrollTop: active.offset().top - 300
+			}, 10);
+
+			var catalogList =  parent.find(".posCatalog_name");
+			if(typeof catalogList == "undefined" || catalogList.length == 0) {
+				return;
+			}
+
+			catalogList.each(function () {
+				if($(this).parent().next().is("ul")) {
+					$(this).removeClass("posCatalog_rotate");
+					$(this).parent().next().hide();
+				}
+			})
+
+			var target = active;
+			var count = 0;
+			while(target.length > 0) {
+				count ++;
+				if(count > 20) {
+					return;
+				}
+
+				var select = target.parents("ul").prev();
+				if(select.hasClass("posCatalog_select") && select.next().is("ul")) {
+					select.find(".posCatalog_name").addClass("posCatalog_rotate");
+					select.next().show();
+					target = target.parent(".posCatalog_select");
+				}
+			}
+		} catch (e) {
+			console.log(e);
+		}
+	}
+
+	var onReadComplete1 =function(){
+		if (onSearchChapterFlag == 1) {
+			// 走搜索流程
+		} else {
+			if(!document.getElementById("chapterIdid") || !(0==0 && 0!=1)){
+				return;
+			}
+		}
+		var chapterId = document.getElementById("chapterIdid").value;
+		var searchChapterListByName = document.getElementById("searchChapterListByName").value.trim();
+		var closeLists = jQuery(".knowledgeCloseBtnImg");
+		var idLists = "";
+		for (var i = 0, len = closeLists.size(); i < len; i++) {
+			var id = closeLists.eq(i).parent().attr("id");
+			idLists += id + ",";
+		}
+		idLists = idLists.substring(0, idLists.length - 1);
+
+					jQuery.ajax({ //一个Ajax过程
+				type: "get", //以get方式与后台沟通
+				url : _HOST_CP2_ + "/mycourse/studentstudycourselist",
+				dataType:'html',//返回的值
+				data: {courseId:'266218616',chapterId:chapterId,clazzid:'152328834',cpi:'432104926',mooc2:1, searchChapterListByName: searchChapterListByName},
+				success: function(data){//如果调用成功
+					document.getElementById("coursetree").innerHTML = data;
+					var countListSearchChapter = document.getElementById("countListSearchChapter").value;
+					if (countListSearchChapter == 0) {
+						document.getElementById("coursetree").innerHTML = '<div class="NoResult">暂无搜索结果</div>';
+					}
+					jQuery("#coursetree .posCatalog_select").removeClass("posCatalog_active");
+					jQuery("#cur" + chapterId).addClass("posCatalog_active");
+					var bulletFormat = "";
+					if( bulletFormat != "null" && bulletFormat == "Dot"){
+						$(".posCatalog_sbar").hide();
+					}
+					posCatalogScroll()
+					posChapter();
+					onSearchChapterFlag = 0;
+					hideChangeBtn();
+				}
+			});
+			}
+	function addZero(num) {
+		if (num < 10) {
+			return '0' + num;
+		}
+
+		return num;
+	}
+	function dateFormate(second){
+		if(second<=0){
+			return "00:00:00";
+		}else{
+			var date = new Date(second * 1000);
+			var h = date.getHours() - 8;
+			var m = date.getMinutes() ;
+			var s = date.getSeconds();
+			var ts = addZero(h) + ':' + addZero(m) + ':' + addZero(s);
+			return ts;
+		}
+
+	}
+
+	function conversion(times){
+		// 时间格式 当年显示为MM-dd hh:mm 往年显示为YYYY-MM-dd hh:mm
+		var date = new Date(times);
+		var curDate = new Date();
+		var curYear = curDate.getFullYear();
+		Y = date.getFullYear() + '-';
+		M = (date.getMonth()+1 < 10 ? '0'+(date.getMonth()+1) : date.getMonth()+1) + '-';
+		D = (date.getDate() < 10 ? '0'+(date.getDate()) : date.getDate())+' ';
+		h = (date.getHours() < 10 ? '0' + (date.getHours()) : date.getHours()) + ':';
+		m = (date.getMinutes() < 10 ? '0' + (date.getMinutes()) : date.getMinutes());
+		if (date.getFullYear() == curYear) {
+			return M + D + h + m;
+		}
+		return Y + M + D + h + m;
+		// 输出结果：04-23 18:55 或 2022-04-23 18:55
+	}
+	function conversionVideoTime(videoTime){
+		var minuteTime = parseInt(videoTime / 60);
+		if (minuteTime < 10) {
+			minuteTime = "0" + minuteTime.toString();
+		}
+		var secondTime = parseInt(videoTime % 60);
+		if (secondTime < 10) {
+			secondTime = "0" + secondTime.toString();
+		}
+		return minuteTime + ":" + secondTime;
+	}
+
+	function checkUnsave(){
+		var writenotecontent = "";
+		try {
+			writenotecontent = typeof MultiEditor != "undefined" && MultiEditor.getRichText('editor1').rtf_content;
+		}catch (e){}
+
+		if(writenotecontent != '' && writenotecontent != ""){
+			var tips = "您还有章节笔记未保存，是否保存？";
+			$("#noteSaveTips").text(tips);
+			var popDeleShowHide = $('.popDeleShowHide');
+
+			popDeleShowHide.fullFadeIn();
+			popDeleShowHide.addClass('maskFadeOut');
+			$('body').addClass('popOverflow');
+			return true;
+		}
+		return false;
+	}
+	function playVideo(obj){
+    	var pObjId = $(obj).attr("objId");
+    	var pJobId = $(obj).attr("jobId");
+    	var pTime = $(obj).attr("time");
+		var videoIframes = $("#iframe").contents().find("iframe");
+		for (var i = 0; i < videoIframes.size(); i++) {
+			var vIframe = videoIframes[i];
+			var vObjId = $(vIframe).attr("objectid");
+			var vJobId = $(vIframe).attr("jobid");
+			if (!vJobId) {
+				var vData = JSON.parse($(vIframe).attr("data"));
+				vJobId = vData["_jobid"];
+			}
+			if (pJobId == vJobId && pObjId == vObjId) {
+				$(vIframe)[0].contentWindow.playerTime && $(vIframe)[0].contentWindow.playerTime(parseInt(pTime));
+			}
+		}
+	}
+	function guid2() {
+		function S4() {
+			return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
+		}
+		return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4());
+	}
+	$(".dotNote_blue").click(function (){
+		$(".dotNote_con").hide();
+		localStorage.setItem("videoNotePoint", "true");
+	})
+	function videoNotePointTips() {
+		var tips = "您正在学习其他视频，是否先保存当前笔记?";
+		$("#noteSaveTips").text(tips);
+		var popDeleShowHide = $('.popDeleShowHide');
+
+		popDeleShowHide.fullFadeIn();
+		popDeleShowHide.addClass('maskFadeOut');
+		$('body').addClass('popOverflow');
+	}
+	$(".dotNote_dadian").click(function() {
+		if ($("#iframe").contents().find(videoNoteFrame).length > 0) {
+			// 有播放过视频
+			if (typeof videoPlayingFrame != "undefined") {
+				// 同一个卡片点击打点按钮
+				if (videoNoteFrame == videoPlayingFrame) {
+					// 当前播放视频和写笔记视频为同一个
+					var time = parseInt(videoNoteFrame.contentWindow.videojs("video").currentTime());
+					var mid = $(videoNoteFrame).attr("mid");
+					writeVideoNote(time, mid, videoNoteFrame);
+				} else {
+					// 当前播放视频和写笔记视频不是同一个，提示保存
+					videoNotePointTips();
+				}
+			} else {
+				// 没有播放过视频
+				var time = parseInt(videoNoteFrame.contentWindow.videojs("video").currentTime());
+				var mid = $(videoNoteFrame).attr("mid");
+				writeVideoNote(time, mid, videoNoteFrame);
+			}
+		} else {
+			// 不同卡片点击打点按钮要提示是否保存笔记
+			videoNotePointTips();
+		}
+	})
+	var scrollTopOffset = 0;
+	function writeVideoNote(time, mid, frameEle) {
+		if (typeof MultiEditor == "undefined") {
+			return;
+		}
+		if ($('.switchbtn').hasClass('switchbtn_cur')) {
+			$('.posChapter_left').animate({left:0})
+			$('.posChapter_left').find('.switchbtn').animate({right:0})
+			$('.posChapter_right').animate({right:0})
+			$('.posChapter_right').find('.switchbtn').animate({right:0})
+			$('.switchbtn').removeClass('switchbtn_cur');
+		}
+		if (mid != $(videoNoteFrame).attr("mid") && checkUnsave()) {
+			return;
+		}
+		var noteName = $(".posCatalog_select.posCatalog_active").children("span").attr("title");
+		$("#noteTitle").val(noteName);
+		if (videoNoteFrame == null) {
+			scrollTopOffset = 160;
+		} else {
+			scrollTopOffset = 80;
+		}
+		videoNoteFrame = frameEle;
+		videoNoteScrollTop = $("html,body").scrollTop();
+		$("#editor1 .edui-for-screenshot").show();
+		$(".dotNote_box").show();
+		if (!localStorage.getItem("videoNotePoint")) {
+			$(".dotNote_con").show();
+		} else {
+			$(".dotNote_con").hide();
+		}
+		var courseId = "266218616";
+		var clazzId = "152328834";
+		var cpi = "432104926";
+		var logo = 'https://p.ananas.chaoxing.com/star3/270_169c/1e98dba9cefab2aa68d72be032e5b5e3.jpg';
+		var knowledgeId = $("#chapterIdid").val();
+		var cardId = $("#prev_tab .prev_ul li.active").attr("cardid");
+		var videoName = $("#noteVideoName").val();
+		var subName = "来自课程" + "中国古典小说鉴赏 历史评价——不可观也";
+		var cid = $("#videoNoteCid").val();
+		if (cid == "") {
+			cid = guid2();
+		}
+		var transferLink = _HOST_CP1_ + "/knowledge/chaptertransfer?courseid=" + courseId + "&knowledgeid=" + knowledgeId + "&clazzid="+ clazzId + "&cardid=" + cardId + "&cpi=" + cpi;
+		MultiEditor.insertCourseVideoMark('editor1', {
+			id: cid,
+			time: time
+		},{
+			cid:cid,
+			"attachmentType": 54,
+			"att_course_video": {
+				"knowledgeId": knowledgeId,
+				"courseId": courseId,
+				"clazzId": clazzId,
+				"cardId": cardId,
+				"cpi": cpi,
+				"mid": mid,
+				"title": videoName, // 卡片标题
+				"subTitle": subName, // 卡片副标题
+				"logo": logo, // 图标
+				"mid": mid,
+				"transferLink": transferLink
+			}
+		})
+		$("#videoNoteCid").val(cid);
+		setTimeout(function(){
+			$("html,body").scrollTop(videoNoteScrollTop);
+			try {
+				var scrollTop = $(".formNote_padding").scrollTop();
+				$(".formNote_padding").scrollTop(scrollTop + scrollTopOffset);
+			} catch (e) {
+			}
+		}, 300);
+	}
+	function isArray(value) {
+		return Object.prototype.toString.call(value) === '[object Array]';
+	}
+
+	function writeVideoNoteBatch(timeArray, mid, frameEle) {
+		if (typeof MultiEditor == "undefined") {
+			return;
+		}
+		if (typeof timeArray == "undefined" || !isArray(timeArray)) {
+			return;
+		}
+		if ($('.switchbtn').hasClass('switchbtn_cur')) {
+			$('.posChapter_left').animate({left:0})
+			$('.posChapter_left').find('.switchbtn').animate({right:0})
+			$('.posChapter_right').animate({right:0})
+			$('.posChapter_right').find('.switchbtn').animate({right:0})
+			$('.switchbtn').removeClass('switchbtn_cur');
+		}
+		if (mid != $(videoNoteFrame).attr("mid") && checkUnsave()) {
+			return;
+		}
+		var noteName = $(".posCatalog_select.posCatalog_active").children("span").attr("title");
+		$("#noteTitle").val(noteName);
+		if (videoNoteFrame == null) {
+			scrollTopOffset = 160;
+		} else {
+			scrollTopOffset = 80;
+		}
+		videoNoteFrame = frameEle;
+		videoNoteScrollTop = $("html,body").scrollTop();
+		$("#editor1 .edui-for-screenshot").show();
+		$(".dotNote_box").show();
+		if (!localStorage.getItem("videoNotePoint")) {
+			$(".dotNote_con").show();
+		} else {
+			$(".dotNote_con").hide();
+		}
+		var courseId = "266218616";
+		var clazzId = "152328834";
+		var cpi = "432104926";
+		var logo = 'https://p.ananas.chaoxing.com/star3/270_169c/1e98dba9cefab2aa68d72be032e5b5e3.jpg';
+		var knowledgeId = $("#chapterIdid").val();
+		var cardId = $("#prev_tab .prev_ul li.active").attr("cardid");
+		var videoName = $("#noteVideoName").val();
+		var subName = "来自课程" + "中国古典小说鉴赏 历史评价——不可观也";
+		var cid = $("#videoNoteCid").val();
+		if (cid == "") {
+			cid = guid2();
+		}
+		var newArray = [];
+		for (var i = 0; i < timeArray.length; i++) {
+			var obj = timeArray[i];
+			obj.id = cid;
+			newArray.push(obj);
+		}
+		var transferLink = _HOST_CP1_ + "/knowledge/chaptertransfer?courseid=" + courseId + "&knowledgeid=" + knowledgeId + "&clazzid="+ clazzId + "&cardid=" + cardId + "&cpi=" + cpi;
+		MultiEditor.insertCourseVideoMark('editor1', newArray,{
+			cid:cid,
+			"attachmentType": 54,
+			"att_course_video": {
+				"knowledgeId": knowledgeId,
+				"courseId": courseId,
+				"clazzId": clazzId,
+				"cardId": cardId,
+				"cpi": cpi,
+				"mid": mid,
+				"title": videoName, // 卡片标题
+				"subTitle": subName, // 卡片副标题
+				"logo": logo, // 图标
+				"mid": mid,
+				"transferLink": transferLink
+			}
+		})
+		$("#videoNoteCid").val(cid);
+		setTimeout(function(){
+			$("html,body").scrollTop(videoNoteScrollTop);
+			try {
+				var scrollTop = $(".formNote_padding").scrollTop();
+				$(".formNote_padding").scrollTop(scrollTop + scrollTopOffset);
+			} catch (e) {
+			}
+		}, 300);
+	}
+
+	function writeNoteVideoSummary(text, mid, frameEle) {
+		videoNoteScrollTop = $("html,body").scrollTop();
+		if (typeof MultiEditor == "undefined") {
+			return;
+		}
+		if ($('.switchbtn').hasClass('switchbtn_cur')) {
+			$('.posChapter_left').animate({left:0})
+			$('.posChapter_left').find('.switchbtn').animate({right:0})
+			$('.posChapter_right').animate({right:0})
+			$('.posChapter_right').find('.switchbtn').animate({right:0})
+			$('.switchbtn').removeClass('switchbtn_cur');
+		}
+		if (mid != $(videoNoteFrame).attr("mid") && checkUnsave()) {
+			return;
+		}
+		MultiEditor.insertHTML('editor1', "<p>" + text + "</p>")
+		videoNoteFrame = frameEle;
+		setTimeout(function(){
+			$("html,body").scrollTop(videoNoteScrollTop);
+			try {
+				var scrollTop = $(".formNote_padding").scrollTop();
+				$(".formNote_padding").scrollTop(scrollTop + scrollTopOffset);
+			} catch (e) {
+			}
+		}, 300);
+	}
+	function rtfContentDealFun(rtfContent) {
+		if (!rtfContent) {
+			return null;
+		}
+		var el = document.createElement("div"), noteEl = document.createElement("div");
+		noteEl.className = "noteRtfContent";
+		el.innerHTML = rtfContent;
+		if ($(el).find(".record-box-video").length > 0) {
+			for (var i = 0; i < $(el).find(".record-box-video").length; i++) {
+				var item = $(el).find(".record-box-video")[i];
+				var videoIframe = $(item).find(".record-iframe .editor-iframe iframe");
+				if (videoIframe.length > 0) {
+					var data = $(videoIframe).attr("name");
+					$(item).attr("name", data);
+					$(item).find(".record-iframe").remove();
+				}
+				noteEl.append(item);
+			}
+			return noteEl;
+		}
+		return null;
+	}
+	var b64DecodeUnicode = function (str) {
+		var xssReg = new RegExp("(\\baler(?=t\\s*\\())|(\\bhref(?=\\s*=\\s*['\"]?\\s*javascript:))|(\\bsrc(?=\\s*=\\s*['\"]?\\s*javascript:))|((data|src)\\s*=['\"]?\\s*data(?=:)(?!:\\s*image))|(^[^<]*<(?=/textarea\\s*>))|(<(?=(script)|(/script)))|(<(?=(details)|(/details)))|(\\b(onstart|onafterprint|onbeforeprint|onbeforeunload|onerror|onhaschange|onload|onmessage|onoffline|ononline|onpagehide|onpageshow|onpopstate|onredo|onresize|onstorage|onundo|onunload|onblur|onchange|oncontextmenu|onfocus|onformchange|onforminput|oninput|oninvalid|onreset|onreset|onsubmit|onkey\\w*|onclick|ondblclick|ondrag\\w*|ondrop|onmouse\\w*|onscroll|ontouch\\w*)(?=(\\s*)=))",'gi');
+		if (!str) {
+			return str;
+		}
+		try {
+			str = decodeURIComponent(atob(str));
+			str=str.replace(xssReg,function(){
+				return arguments[0] + '　';
+			})
+		} catch (e) {
+
+		}
+		try {
+			return JSON.parse(str);
+		} catch (e) {
+
+		}
+		return '';
+	}
+	var videoNoteMid = "", seconds = 0;
+	function notePointVideoPlay() {
+		var videoIframes = $("#iframe").contents().find("iframe.ans-insertvideo-online");
+		for (var i = 0; i < videoIframes.size(); i++) {
+			var vIframe = videoIframes[i];
+			var vMid = $(vIframe).attr("mid");
+			var vData = JSON.parse($(vIframe).attr("data"));
+			if (!vMid) {
+				vMid = vData["mid"];
+			}
+			if (videoNoteMid == vMid) {
+				var fastforward = vData["fastforward"];
+				if (fastforward == "true" && typeof vData["jobid"] != "undefined" && !$(vIframe).parent().hasClass("ans-job-finished")) {
+					var player = $(vIframe)[0].contentWindow.videojs("video");
+					if (parseInt(seconds) < parseInt(player.dragCutOffTime)) {
+						player.currentTime(parseInt(seconds));
+					}
+				} else {
+					$(vIframe)[0].contentWindow.playerTime && $(vIframe)[0].contentWindow.playerTime(parseInt(seconds));
+				}
+			}
+		}
+	}
+	function videoNotePointFun() {
+		$(".itemDiscuss .record-box-video .record-list-time").click(function() {
+			var time = $(this).text();
+			if (!time) {
+				return;
+			}
+			var timeArray = time.split(':');
+			seconds = 0;
+			if (timeArray.length > 2) {
+				// 时:分:秒
+				seconds = parseInt(timeArray[0]) * 3600 + parseInt(timeArray[1]) * 60 + parseInt(timeArray[2]);
+			} else {
+				// 分:秒
+				seconds = parseInt(timeArray[0]) * 60 + parseInt(timeArray[1]);
+			}
+			var name = $(this).parents(".itemDiscuss").find(".record-box-video").attr("name");
+
+			var attachment;
+			try{
+				attachment = b64DecodeUnicode(name);
+			}catch(e){
+				console.log(e)
+			}
+			if (attachment.attachmentType == 54) {
+				var attCourseVideo = attachment.att_course_video;
+				var videoNoteCardid = attCourseVideo.cardId;
+				videoNoteMid = attCourseVideo.mid;
+				if ($(".prev_ul li.active").attr("cardid") == videoNoteCardid) {
+					// 如果笔记时间线对应的是当前卡片中的视频
+					notePointVideoPlay();
+				} else {
+					// 如果笔记时间线对应的是其他卡片的视频，需要先切换卡片再定位时间
+					var cardList = $(".prev_ul li");
+					for (var i = 0; i < cardList.length; i++) {
+						var card = cardList[i];
+						var cardid = $(card).attr("cardid");
+						if (videoNoteCardid == cardid) {
+							$(card).click();
+							setTimeout(notePointVideoPlay, 1000);
+							break;
+						}
+					}
+				}
+			}
+		})
+	}
+
+	function getSort(label) {
+		var arr = label.split(".");
+		if (arr.length > 0) {
+			if (arr.length == 1) {
+				return arr[0];
+			} else {
+				var result = parseFloat(arr[arr.length - 1]);
+				for (var i = arr.length - 1; i > 0; i--){
+					result = parseFloat(getNum(result, arr[i - 1]));
+				}
+				return result;
+			}
+		} else {
+			return 1;
+		}
+	}
+	function getNum (result, num) {
+		return parseFloat(result) * 0.01 + parseFloat(num);;
+	}
+	function getBigSort() {
+		var noteList = $("#content3 .tableDiscuss .itemDiscuss");
+		var chapterLabel = $(".posCatalog_active .posCatalog_sbar").text();
+		var chapterBaseSort = getSort(chapterLabel);
+		var bigSort = 0;
+		for (var i = 0; i < noteList.length; i++) {
+			var noteSort = $(noteList[i]).attr("sort");
+			if (typeof noteSort != "undefined" && noteSort.indexOf(chapterBaseSort.toString()) > -1) {
+				bigSort = parseFloat(bigSort) > parseFloat(noteSort) ? parseFloat(bigSort) :parseFloat(noteSort);
+			} else {
+				continue;
+			}
+		}
+		return bigSort;
+	}
+	function getClazzNote(){
+		if (typeof MultiEditor == "undefined") {
+			$("#content3 .newTopic1").remove();
+		}
+		//获取章节笔记列表
+		var chapterId = document.getElementById("chapterIdid").value;
+		posNote();
+		jQuery.ajax({
+			type : "get",
+			url : _HOST_CP2_ + "/schoolCourseInfo/chapternotelist",
+			data : {
+				userid:363273819,
+				chapterId:chapterId,
+				courseId : 266218616,
+				clazzid: 152328834,
+				needrtfcontent: 1
+			},
+			success: function(data){
+				if (data != null) {
+					data = jQuery.parseJSON(data);
+					if (data.result == 1) {
+						if (data.data.list.length > 0) {
+							$(".noTopic").css('display', 'none');
+							var kc_notes_list =  $(".tableDiscuss");
+							kc_notes_list.empty();
+							var createTime = null;
+							var cid = null;
+							var array = data.data.list;
+							for (var i = 0 ; i < array.length; i++) {
+								var content = "";
+								var json = array[i];
+								var time = 0;
+								var videoTime = "";
+								var noteVideoName = "";
+								var noteVideoObjectId = "";
+								var noteVideoJobId = "";
+								var title = "";
+								var sort = "";
+								var rtfContentEle = null;
+								$.each(json, function(i) {
+									if(i == 'content'){
+										content = json[i];
+									}else if(i == 'createTime'){
+										createTime = conversion(json[i]);//得到的结果是2012-10-12 22:37:33
+									} else if(i == 'cid') {
+										cid = json[i];
+									} else if (i == 'noteVideoTime') {
+										time = json[i];
+										videoTime = conversionVideoTime(time);
+									} else if (i == 'noteVideoObjectId') {
+										noteVideoObjectId = json[i];
+									} else if (i == 'noteVideoName') {
+										noteVideoName = json[i];
+									} else if (i == 'noteVideoJobId') {
+										noteVideoJobId = json[i];
+									} else if (i == 'title') {
+										title = json[i];
+									} else if (i == 'rtf_content') {
+										rtfContentEle = rtfContentDealFun(json[i]);
+									} else if (i == "sort") {
+										sort = json[i];
+									}
+								});
+
+								var noteNameDiv = "";
+								if (noteVideoName != "" || noteVideoObjectId != "" || noteVideoJobId != "") {
+									noteNameDiv = '<div class="Note_name" style="display:block;" onclick="playVideo(this)" objId="' + noteVideoObjectId + '" jobId="' + noteVideoJobId + '" time="' + time + '">' + noteVideoName + " " + videoTime + '</div>';
+								}
+								if (rtfContentEle) {
+									content = $(rtfContentEle).html();
+								}
+								var noteTitle = "";
+								if (title) {
+									noteTitle = '<p class="noteTitle">' + title + '</p>';
+								}
+								kc_notes_list.append('<div class="itemDiscuss" sort="' + sort + '" cid="' + cid + '">\n' + noteNameDiv + noteTitle +
+										'                        <div class="Note_text colorDeep">' + content + '</div>\n' +
+										'                        <p class="Note_time colorShallow">' + createTime + '</p>\n' +
+										'                        </div>');
+							}
+							$(".itemDiscuss").on("click", function(e) {
+								var cid = $(this).attr("cid");
+								var listTime = $(this).find(".record-box-video .record-list-time");
+								if (!listTime.is(e.target) && listTime.has(e.target).length === 0) {
+									var url = "https://noteyd.chaoxing.com/pc/" + cid + "?c=1";
+									window.open(url, "_blank");
+								}
+							})
+							videoNotePointFun();
+						}else{
+							$(".tableDiscuss").empty();
+							$(".noTopic").css('display','block');
+						}
+					}
+				}
+
+			}
+		});
+	};
+    var leftZD = $('.posChapter').offset().left
+    if(leftZD==0){
+        $('#DownloadaDiv').css('right','20px')
+        $('#JS_back_to_top').css('right','20px')
+    }
+	//讨论话题showhide
+	$('.newTopic_bnt').click(function(){
+		// 新建笔记屏蔽截屏按钮
+		$("#editor1 .edui-for-screenshot").hide();
+		$(this).next().slideDown(300)
+		var noteName = $(".posCatalog_select.posCatalog_active").children("span").attr("title");
+		$("#noteTitle").val(noteName);
+	})
+	$('.replyQuxiao').click(function(){
+		$(this).parent().parent().slideUp(300)
+		typeof MultiEditor != "undefined" && MultiEditor.setRichText('editor1','');
+	})
+	function posNoteScroll(){
+    	try {
+			$("#posNoteScroll").niceScroll({cursorborder:"",cursorwidth:8,cursorcolor:"#CFD8E6",boxzoom:false,autohidemode:true});
+			setInterval(function(){
+				$("#posNoteScroll").getNiceScroll().resize(); //检测滚动条是否重置大小（当窗口改变大小时）
+			},300)
+		} catch (e) {
+		}
+	}
+	posNoteScroll()
+	function goback(){
+		if(checkUnsave()){
+			return;
+		}
+		window.location.href = "/mooc-ans/mycourse/studentcourse?courseId=266218616&clazzid=152328834&enc=31e35ca69e7d85b4b7ac203b03792202";
+	}
+	var isblank=false;
+	getTeacherAjax('266218616','152328834','1223955188','432104926','','','false');
+	var lsatNoteContent="";
+	var clickFlag = false;
+	var addOrUpdateClazzNote = function(){
+		if (clickFlag) {
+			// 点击过直接返回
+			return;
+		}
+		clickFlag = true;
+		var rtf_content = typeof MultiEditor != "undefined" ? MultiEditor.getRichText('editor1') : "";
+		var content = rtf_content.content;
+		var rtfContent = rtf_content.rtf_content;
+		if(content == 'null' || content == null || content=='undefined'){
+			return ;
+		}
+		var chapterId = document.getElementById("chapterIdid").value;
+		// var noteVideoName = $("#noteVideoName").val();
+		// var noteVideoTime = $("#noteVideoTime").val();
+		// var noteVideoJobId = $("#noteVideoJobId").val();
+		// var noteVideoObjectId = $("#noteVideoObjectId").val();
+		var noteName = $("#noteTitle").val();
+		if (noteName == "") {
+			noteName = "历史评价——不可观也";
+		}
+		var type = $("#type").val();
+		var firstChapter = $(".posCatalog_select.posCatalog_active").parents("li").find(".firstLayer");
+		// 单元关联的章节id和单元名称
+		var unitNodeId = $(firstChapter).attr("id");
+		var unitName = $(firstChapter).children(".posCatalog_title").attr("title");
+		// 单元排序
+		var unitSort = parseFloat($(firstChapter).find(".posCatalog_sbar").text());
+		// 获取小章节笔记排序顺序
+		var noteCount = $("#content3 .tableDiscuss .itemDiscuss").length;
+		var chapterLabel = $(".posCatalog_active .posCatalog_sbar").text();
+		// 预留100个笔记，addNum每次笔记发布增加基数
+		var pointNum = chapterLabel.match(/\./g).length;
+		var addNum = 1 / Math.pow(10, 2 * (pointNum + 1));
+		// 章节基础排序
+		var chapterBaseSort = getSort(chapterLabel);
+		if (noteCount == 0) {
+			// 笔记排序 = 章节基础排序 + 每个笔记增加的基数
+			var noteSort = chapterBaseSort + addNum;
+		} else {
+			var bigSort = getBigSort();
+			if (bigSort == 0) {
+				noteSort = chapterBaseSort + addNum;
+			} else {
+				noteSort = bigSort + addNum;
+			}
+		}
+		jQuery.ajax({
+			type: "post",
+			url : _HOST_CP2_ + "/schoolCourseInfo/newChapterNote/add",
+			dataType:'html',
+			data: {
+				cpi: '432104926',
+				userid : '363273819',
+				content: content,
+				rtfContent: rtfContent,
+				notename: noteName,
+				knowledgeid: chapterId,
+				unitnodeid: unitNodeId,
+				unitname: unitName,
+				courseid : 266218616,
+				clazzid: 152328834,
+				unitsort: unitSort.toString(),
+				notesort: noteSort.toString()
+			},
+			success: function(data){
+				try {
+					var jsonObject = jQuery.parseJSON(data);
+					if(jsonObject.result == 1){
+						getClazzNote();
+						$(".Note_name").html("");
+						$(".Note_name").css("display", "none");
+						$("#noteVideoName").val("");
+						$("#noteVideoTime").val("");
+						$("#noteVideoJobId").val("");
+						$("#noteVideoObjectId").val("");
+						$("#type").val(0);
+						typeof MultiEditor != "undefined" && MultiEditor.setRichText('editor1','')
+						$("#videoNoteCid").val("");
+						$(".formTopic").css("display", "none");
+					} else {
+						alert(jsonObject.msg || "发布失败，请稍后重试");
+					}
+				} catch (e) {
+					if (data.indexOf("processVerify.ac") > 0) {
+						safefilter && safefilter.showVerify2(_HOST_CP2_);
+					}
+				}
+				clickFlag = false;
+			}
+		});
+	}
+	function down(){
+		var el = $('.newPic'),
+				curHeight = el.height(),
+				autoHeight = el.css('height', 'auto').height();
+		el.height(curHeight).animate({height: autoHeight}, 250);
+	}
+
+	function openlockshow(){
+		if($("#openlock").length>0){
+			document.getElementById("openlock").style.display="block";
+		}
+	}
+
+	function openLock(count,chapterId,courseId,clazzid,knowledgestr){
+		jQuery.get(_HOST_CP2_ + "/edit/openlock",
+				{
+					clazzid : clazzid,
+					nodeid : chapterId,
+					courseId:courseId
+				},
+				function(data){
+					if(data=="true"){
+						PCount.next(1,chapterId,courseId,clazzid,knowledgestr);
+						onReadComplete();
+					}
+				}
+		);
+	}
+	function playFirstVideo() {
+		if (videoAutoPlay == 0) {
+			return;
+		}
+        var INTERVAL = 800;
+        // 最多轮询20次
+        var MAX_RETRY = 20;
+        var tryCount = 0;
+
+        var timer = setInterval(() => {
+
+            tryCount++;
+            if (tryCount > MAX_RETRY) {
+                clearInterval(timer);
+                return;
+            }
+
+            var iframeArr = $("#iframe").contents().find("iframe.ans-insertvideo-online");
+            if (iframeArr.length === 0) {
+                return;
+            }
+
+            var firstIframe = iframeArr[0];
+            var frameDoc = $(firstIframe).contents();
+
+            var playBtn = frameDoc.find(".vjs-big-play-button");
+            var videoEl = frameDoc.find("video, #video_html5_api");
+
+            if (playBtn.length === 0 || videoEl.length === 0) return;
+
+            // 自动播放限制：用户无操作时直接 click() 可能被浏览器阻止
+            // 增加处理：调用 player.play()
+            try {
+                var player = firstIframe.contentWindow.videojs(videoEl[0]);
+                if (player && player.paused()) {
+                    player.play().catch(() => {
+                        // 如果被限制，则点击按钮
+                        playBtn[0].click();
+                    });
+                }
+            } catch (e) {
+                // 如果 videojs 未准备好，只能点按钮
+                playBtn[0].click();
+            }
+
+            clearInterval(timer);
+
+        }, INTERVAL);
+	}
+	function setVideoNoteTime() {
+		var iframeArr = $("#iframe").contents().find("iframe.ans-insertvideo-online");
+		for (var i = 0; i < iframeArr.length; i++) {
+			var iframeItem = iframeArr[i];
+			if ($(iframeItem).attr("mid") == videoNoteMid) {
+				if (isNaN(parseInt(videoNoteTime))) {
+					videoNoteTime = 0;
+				}
+				iframeItem.contentWindow.videojs("video").currentTime(parseInt(videoNoteTime));
+			}
+		}
+
+	}
+	function clickImg(){
+		$('#imgtoolWrap').remove();
+					var imgList = $("#iframe").contents().find("img:not(.content-banner img,.gallery-wrap img)")
+			for (var i =0; i < imgList.length; i++) {
+				var item = imgList[i];
+				var src = $(item).attr("src");
+				$(item).attr("data-original", src);
+			}
+			imgList.viewer({
+				url : 'data-original',
+			});
+							setTimeout("playFirstVideo()", 500);
+	}
+
+	//注释超链接弹窗中的图片放大
+	function tipImgEnlarge(obj) {
+		if(typeof(obj) == "undefined"){
+			return;
+		}
+		$(obj).find(".imgEnlarge").viewer({
+			url : 'data-original',
+		});
+	}
+
+	(function(){
+		appendDetectUrl();
+	})()
+
+	var popPlayState = false;
+	function showCustomPop(url) {
+		document.getElementById("popFrameId").src = url;
+		$(".customMaskDiv").show();
+	}
+
+	function hideCustomPop() {
+		$(".customMaskDiv").hide();
+		popPlayState = true;
+	}
+
+	function windowClose(){
+		   window.opener = null;
+		   window.open('', '_self');
+		   window.close();
+	}
+
+	var videoTimeLimit = 'false' === 'true';
+	var hasJobLimit = 'false' === 'true';
+	var resumePlay = false;
+	var allowNextVideo = true;
+
+	function closeDeleteWindow () {
+		$('.maskDiv').fullFadeOut();
+		$('.maskDiv').removeClass('maskFadeOut');
+		$('body').removeClass('popOverflow');
+		resumePlay = true;
+	}
+
+	function showJobLimitTip() {
+		$(".jobLimitTip").show();
+		$(".videoLimitTip").hide();
+		var jobCountDiv = $('.jobCountDiv');
+		jobCountDiv.fullFadeIn();
+		jobCountDiv.addClass('maskFadeOut');
+		$('body').addClass('popOverflow');
+	}
+
+	function showVideoTimeLimitTip() {
+		$(".jobLimitTip").hide();
+		$(".videoLimitTip").show();
+		var jobCountDiv = $('.jobCountDiv');
+		jobCountDiv.fullFadeIn();
+		jobCountDiv.addClass('maskFadeOut');
+		$('body').addClass('popOverflow');
+	}
+	function toNextFocus() {
+		if(event.keyCode == 9){
+			$("#prevNextFocusPrev").attr("tabindex","0")
+			$("#prevNextFocusNext").attr("tabindex","0")
+			$("#prevNextFocus").attr("tabindex","0")
+			$("#prevNextFocus").focus();
+		}
+	}
+	// 无障碍回车事件
+	var tabindexChangeDisplayContent = function(num,totalnum,chapterId,courseId,clazzid,knowledgestr){
+		if(event.keyCode == 13  && !event.shiftKey){
+			changeDisplayContent(num,totalnum,chapterId,courseId,clazzid,knowledgestr);
+		}
+	}
+
+
+	//获取章节标签
+	function getUserKnowledgeLabel(){
+
+		if($(".chapterlabellist").find(".addMarkBtn").length == 1){
+			return;
+		}
+
+		var courseId = $("#curCourseId").val();
+		var clazzId = $("#curClazzId").val();
+		var cpi = $("#curCpi").val();
+
+		jQuery.ajax({
+			type: "get",
+			url : _HOST_CP2_ + "/knowledge/getchapterlabellist",
+			dataType:'html',
+			data: {
+				courseId: courseId,
+				clazzId: clazzId,
+				cpi: cpi
+			},
+			success: function(data){
+				$(".chapterlabellist").empty();
+				$(".chapterlabellist").html(data);
+			}
+		});
+	}
+
+	// 渲染标注数据
+	window.renderingMarkData = function renderingMarkData(showFlag){
+		var bgAndBgLineArr = window.bgAndBgLine;
+		// console.log("bgAndBgLineArr: " + JSON.stringify(bgAndBgLineArr))
+		posRenderingMark();
+
+		var container = $('.renderingMarkCls .comment-list-ul');
+		container.empty();
+		if (bgAndBgLineArr && bgAndBgLineArr.length > 0) {
+			var isAddedIds = [];
+			// 按照 id 从大到小排序
+			bgAndBgLineArr.sort(function(a, b) {
+				return b.id - a.id; // 降序排序
+			});
+			$.each(bgAndBgLineArr, function(index, item) {
+				var style = 'border-bottom: 2px solid ';
+				var marktype = item.marktype;
+				var timeStr = item.createTimeStr;
+				if (marktype && (marktype == 'bg' || marktype == 'bgline')) {
+					if (marktype == 'bgline') {
+						style = style + item.markcolor;
+					} else {
+						style = 'background-color: ' + item.markcolor;
+					}
+					
+					if (isAddedIds.indexOf(item.id) == -1) {
+						container.append('<li markid="' + item.id + '">' +
+								'<span class="" style="' + style + '">' + item.content + '</span>' +
+								'<p style="color: #8a8b99;font-size: 10px;margin-top: 10px;">' + timeStr + '</p>' +
+								'</li>');
+					}
+					isAddedIds.push(item.id);
+				}
+			});
+		} else {
+			var nullTipDom = `<div class="noMark" style="display: block;">暂无标注</div>`;
+			container.append(nullTipDom)
+		}
+		
+		if (showFlag && showFlag === 1) {
+			$(".renderingMarkCls").show();
+		}
+		initRenderingMarkLiClick();
+	}
+
+	// 笔记列表的高度
+	function posRenderingMark() {
+		var fanyaHeight = $(window).height()
+		$('#content5').css({'height' : fanyaHeight - 40 - 65 - 30}) //左右浮框
+	}
+	
+	function initRenderingMarkLiClick() {
+		$('.comment-list-ul').off('click', 'li').on('click', 'li', function() {
+			var markid = $(this).attr('markid'); // 目标 sequence-id
+			window.getScrollTopHeight(markid);
+		});
+	}
+
+	function scrollRenderingMarkDom(topHeight) {
+		$('html, body').animate({
+			scrollTop: topHeight - 200
+		});
+	}
+	window.scrollRenderingMarkDom = scrollRenderingMarkDom;
+	
+	function addUserKnowledgeLable(){
+		var chapterId = $("#chapterId").val();
+		ajaxAddUserKnowledgeLabel(chapterId);
+	}
+
+	//添加章节标签
+	function ajaxAddUserKnowledgeLabel(knowledgeId){
+		var courseId = $("#curCourseId").val();
+		var clazzId = $("#curClazzId").val();
+		var cpi = $("#curCpi").val();
+
+		jQuery.ajax({
+			type: "get",
+			url : _HOST_CP2_ + "/knowledge/addchapterlabel",
+			dataType:'json',
+			data: {
+				courseId: courseId,
+				clazzId: clazzId,
+				knowledgeId: knowledgeId,
+				cpi: cpi
+			},
+			success: function(data){
+				if(data.status){
+					var  knowledgeLi ='<li data="'+knowledgeId+'" id="knowledgelabel_'+knowledgeId+'"><div class="markName"  onclick="skipKnowledge('+knowledgeId+')">'+data.name+'</div>'+
+					'<span class="markDelet" onclick="ajaxDeleteUserKnowledgeLabel('+1223955188+')"></span>';
+					$(".chapterlabellist").find("ul").append(knowledgeLi);
+					$("#markTag_"+knowledgeId).show();
+
+
+				}else{
+					alert(data.msg);
+				}
+			}
+		});
+	}
+
+
+	//删除章节标签
+	function ajaxDeleteUserKnowledgeLabel(knowledgeId){
+		var courseId = $("#curCourseId").val();
+		var clazzId = $("#curClazzId").val();
+		var cpi = $("#curCpi").val();
+
+		jQuery.ajax({
+			type: "get",
+			url : _HOST_CP2_ + "/knowledge/deletechapterlabel",
+			dataType:'json',
+			data: {
+				courseId: courseId,
+				clazzId: clazzId,
+				knowledgeId: knowledgeId,
+				cpi: cpi
+			},
+			success: function(data){
+				if(data.status){
+					$("#knowledgelabel_"+knowledgeId).remove();
+					$("#markTag_"+knowledgeId).hide();
+				}else{
+					alert(data.msg);
+				}
+			}
+		});
+	}
+
+
+	function skipKnowledge(chapterId){
+		if(typeof chapterId == "undefined" || chapterId== ""){
+			return "";
+		}
+
+		if($("#cur"+chapterId).length == 0){
+			alert("章节被删除或者未开放");
+			return
+		}
+
+
+		var courseId = $("#curCourseId").val();
+		var clazzId = $("#curClazzId").val();
+		var cpi = $("#curCpi").val();
+		getTeacherAjax(courseId,clazzId,chapterId,cpi,'','','false',1);
+
+	}
+
+
+
+</script>
+<input type="hidden" id="currentTime" value="1789370090877"/>
+<input type="hidden" id="uploadEnc" value="abbc3fcb472b32381554068d470951db"/>
+<input type="hidden" id="uploadUid" value="363273819"/>
+
+<div class="maskDiv jobCountDiv" style="display:none; z-index: 999">
+	<input type="hidden" id="delTopicId" value=""/>
+	<div class="popDiv wid440 popMove">
+		<div class="popHead">
+			<a href="javascript:" class="popClose fr" onclick="closeDeleteWindow()">
+				<img src="//mooc1.chaoxing.com/mooc-ans/mooc2/images/popClose.png" />
+			</a>
+			<p class="fl fs18 colorDeep" style="font-weight:normal;">提示</p>
+		</div>
+		<div class="het62"></div>
+		<p class="popWord2 fs16 colorIn jobLimitTip">今日视频任务点完成数已达上限，您可以观看视频，但无法完成任务点</p>
+		<p class="popWord2 fs16 colorIn videoLimitTip">今日视频观看时长已达上限，您可继续观看视频，但无法完成任务点</p>
+		<div class="popBottom">
+			<a href="javascript:" class="jb_btn jb_btn_92 fr fs14" onclick="closeDeleteWindow()">知道了</a>
+		</div>
+		<div class="het72"></div>
+	</div>
+</div>
+<div class="maskDivReport " style="z-index:10000;display:none;">
+	<div class="popDiv wid640 popClass">
+		<div class="popHead">
+			<p class="fl">举报</p>
+			<a href="javascript:;" onclick="$('.maskDivReport').hide()" class="popClose fr" ><img src="//mooc1.chaoxing.com/mooc-ans/images/courselist/qr-fc-popClose.png" /></a>
+		</div>
+		<div class="het62">
+		</div>
+		<div class="perspective">
+			<div class="page" style="display: block;">
+				<div class="popMain" style="padding-top:0">
+					<form id="reportForm" method="post" target="reportFrame">
+						<input type="hidden" name="type" id="reportType" value=""/>
+						<input type="hidden" name="sourceIdstr" id="reportSourceIdstr" value=""/>
+						<input type="hidden" name="sourceContent" id="reportSourceContent" value=""/>
+					</form>
+					<iframe name="reportFrame" width="638px" height="420px;" src="" id="reportFrame" frameborder="0"></iframe>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+			<style>
+  #mobileBrowerLearnMask .popDiv{width:6rem;background:#fff;border-radius:.2rem;position:fixed;left:50%;top:50%;margin-top:-1.54rem;margin-left:-3rem;}
+  #mobileBrowerLearnMask .title{width:100%;height:.7rem;line-height:.7rem;font-size:.36rem;width:100%;text-align:center;font-size:.32rem;margin-top:.2rem;font-weight:bold}
+  #mobileBrowerLearnMask .Btmdiv{width:100%;height:.88rem;border-top:1px solid #ebebeb;margin-top:.18rem;display:flex;}
+  #mobileBrowerLearnMask .Btmdiv a{display:inline-block;flex:1;text-align:center;line-height:.88rem;color:#0099ff;font-size:.32rem;position:relative}
+  #mobileBrowerLearnMask .Btmdiv a.cancle:after{width:1px;height:100%;background:#ebebeb;content:'';position:absolute;right:0;top:0;}
+  #mobileBrowerLearnMask .popCenter{font-size: .32rem;padding:.4rem .7rem 0 .7rem;color: #333;padding-bottom:.2rem;text-align:center}
+</style>
+<script  type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/js/phone/rem750.js"> </script>
+<div  id="mobileBrowerLearnMask" style="display:none;z-index: 20000;">
+    <div class="popDiv">
+		<p class="popCenter padTop60">手机浏览器无法记录您的学习信息，为保证学习成绩，请使用学习通App进行学习</p>
+		<div class="Btmdiv">
+			<a href="javascript:;" class="cancle" onclick="closeMobileBrowerLearnMask()">取消</a>
+			<a href="javascript:;" onclick="launchChaoxingStudy()">打开学习通</a>
+		</div>
+	</div>		
+</div>	
+<script  type="text/javascript">
+   var appDownloadUrl = "http://apps.chaoxing.com/d/app/4.html";
+   var  durationHours = 24;
+   function checkMobileBrowerLearn() {
+        var courseId =  '266218616';
+		if(courseId == 204396051 ||  courseId == 202418768){
+			return;
+		}
+		var schoolid = '2183';
+		if(schoolid == 116717 || schoolid == 60928){
+			return;
+		}
+        var agent = navigator.userAgent;
+    	if (/(iPhone|iPad|iPod|iOS)/i.test(agent) || /(Android)/i.test(agent)
+    			|| /(webOS)/i.test(agent) || /(BlackBerry)/i.test(agent)
+    			|| /(Windows Phone)/i.test(agent)) {
+			var uf = getCookie('uf');
+			var mobileBrowerLearn = getCookie('mobileBrowerLearn');
+			if(durationHours + '_' + uf  == mobileBrowerLearn){
+			   return;
+			}
+    		var taskPoint = $('#cur1223955188').find('.orange01').length;
+			var taskPoints = $(".catalog_points_yi").length;
+    		if (taskPoint == 0 && taskPoints == 0) {
+    			return;
+    		}
+    		setTimeout(function() {
+    			showMobileBrowerLearnMask();
+    		}, 1000);
+      }
+    }
+	
+	 function launchChaoxingStudy() {
+        window.location.href = "cxstudy://"; //唤醒
+        setTimeout(function() {
+            if (!document.webkitHidden) {
+                window.location.href = appDownloadUrl;
+            }
+        }, 5000);
+    }
+    
+    function showMobileBrowerLearnMask() {
+    	WAY.box.show({
+    		'divid' : 'mobileBrowerLearnMask'
+    	});
+	   $('.wmask').height($(document).height() + 500);
+    }
+    
+    function closeMobileBrowerLearnMask() {
+	    var uf = getCookie('uf');
+		setCookie('mobileBrowerLearn', durationHours+ '_' + uf, durationHours , '/mycourse/studentstudy');
+
+		setCookie('mobileBrowerLearn', durationHours+ '_' + uf, durationHours , _HOST_CP2_ + '/mycourse/studentstudy');
+    	if ($('.wmask').length == 0) {
+    		return;
+    	}
+    	WAY.box.hide();
+    	$('#mobileBrowerLearnMask').css('display', 'none');
+    }
+</script>			<style>
+            .popDiv2{min-height:100px;background: #FFFFFF;border-radius: 10px;position:fixed;left:50%;top:50%;overflow:hidden;margin-left:-320px;margin-top:-240px;}
+    
+    .customMaskDiv{width:100%;height:100%;position:fixed;top:0;left:0;background: rgba(16,26,41,0.76);z-index:10}
+    .customMaskDiv2{position:fixed;top:0;left:0;background: rgba(16,26,41,0.76);z-index:10}
+    .popDiv3{min-height:100px;background: #FFFFFF;border-radius: 10px;position:fixed;left:85%;top:50%;overflow:hidden;margin-left:-320px;margin-top:-240px;}
+</style>
+
+<div class="customMaskDiv" style="z-index:10000;display:none">
+    <div class="popDiv2 wid640 customFrameDiv">
+        <iframe src="" id="popFrameId"  style="width:640px; height:480px;"></iframe>
+    </div>
+</div>
+
+<div class="customMaskDiv2" style="z-index:10000;display:none">
+    <div class="popDiv3 wid640">
+        <iframe src="" id="hidePopFrameId" style="width:495px; height:375px;"></iframe>
+    </div>
+</div><div class="voteContainer">
+	<iframe width="100%" height="100%" src="" id="voteIframe" frameborder="0"></iframe>
+</div>
+<div id="aiAssistantId"></div>
+<script type="text/javascript">
+	$("#toplevelTextCommentTitle").bind("input propertychange focus",function(){
+		if(this.value.length > 200){
+			errorTips(titleLimit200 || "内容限200字");
+		}
+	});
+	$("#toplevelTextCommentContent").bind("input propertychange focus",function(){
+		if(this.value.length > 20000){
+			errorTips(contentLimit20000 || "内容限20000字");
+		}
+	});
+	window.onload = function() {
+		if("0" == "1") {
+			$('#contentFocus').attr("tabindex","0");
+			$('#contentFocus').focus();
+		}
+		//页面加载后，两种人脸识别都支持的话展示
+		if (0 == 2){
+			//由于样式写在style 里 只能使用 css修改style 属性
+			//  $(".faceRecognition_0").css("margin","0");
+			 $(".faceRecognition_0").addClass("captureCollectionType2");
+			$(".faceRecognition_1").children("div:first").addClass("captureCollectionType2");
+			$(".faceCollectStartPop1").children("div:first").addClass("captureCollectionType2");
+			$(".recordSuccessPop1").children("div:first").addClass("captureCollectionType2");
+			// 比对中的弹窗 居中调整
+			$(".faceLogProgressPop1").children("div:first").addClass("captureCollectionType2");
+			$(".captureCollectionType2").css("margin","0");
+			$(".faceStartRecord1").css("margin","18px; 10px 0");
+			$(".faceRecognition_1").hide();
+			$(".faceRecognition_2").hide();
+
+		}
+	}
+	window.addEventListener("message", function (event) {
+		if (!event || !event.data) {
+			return;
+		}
+		var msgJson = {};
+		if (typeof(event.data) === 'string') {
+			try {
+				msgJson = JSON.parse(event.data)
+			} catch (e) {}
+		} else {
+			msgJson = event.data;
+		}
+		if (msgJson == null) {
+			return;
+		}
+		if (msgJson.cmd == "hidedanmaku") {
+			if (msgJson.type == "hide") {
+				// 举报成功
+				var danmuId = msgJson.sourceIdstr;
+				if (reportDanmuFrame && $(reportDanmuFrame).contents().find("#d_" + danmuId).length > 0 || reportDanmuFrame && $(reportDanmuFrame).contents().find("#vd_" + danmuId).length > 0) {
+					reportDanmuFrame && $(reportDanmuFrame).contents().find("#d_" + danmuId).remove();
+					reportDanmuFrame && $(reportDanmuFrame).contents().find("#vd_" + danmuId).remove();
+					$(".maskDivReport").hide();
+					var courseId = $("#curCourseId").val();
+					var clazzId = $("#curClazzId").val();
+					var cpi = $("#curCpi").val();
+
+					jQuery.ajax({
+						type: "get",
+						url : _HOST_CP2_ + "/videodanmaku/deldanmaku",
+						dataType:'json',
+						data: {
+							classid: clazzId,
+							id: danmuId,
+							courseid: courseId,
+							cpi: cpi
+						},
+						success: function(data){
+							if (data && data.result == 0) {
+								alert(data.msg);
+							}
+						}
+					});
+				} else {
+					$(".maskDivReport").hide();
+				}
+			} else if (msgJson.type == "cancle") {
+				// 取消或者举报失败
+				$(".maskDivReport").hide();
+			}
+		}
+	});
+    function setChapterListPadding() {
+        var zjWidth = $(".posMicroChapter").width();
+        if ($(".w_content").length > 0 && !$(".qcatalog_menuicon").hasClass("active")) {
+            $(".w_content").css("padding", "0 60px");
+            $(".w_content").css("margin", "0 auto");
+            $("#mainid").css("padding", "0px " + zjWidth + "px 0px 0px")
+        }
+    }
+	function resizeFun() {
+		posChapter()
+		posDiscuss()
+		posNote()
+		setIframeStyle()
+        setChapterListPadding()
+	}
+	window.addEventListener('resize', resizeFun, false);
+
+	var frameInitSuccess = false;
+	function pushVideoInfo (info) {
+		try {
+			var iframeWindow = document.getElementById("hidePopFrameId").contentWindow;
+			iframeWindow.postMessage(info,'*');
+		} catch (e) {
+			console.log(e);
+		}
+	}
+
+	function pushMsg2Video (info) {
+		try {
+			var iframeWindow = document.getElementById("iframe");
+			if(typeof iframeWindow == "undefined") {
+				return;
+			}
+
+			var src = iframeWindow.getAttribute("src");
+			if(src.indexOf("knowledge/cards") > -1) {
+				var videoIframe = iframeWindow.contentDocument.getElementsByClassName("ans-insertvideo-online");
+				if(typeof videoIframe == "undefined") {
+					return;
+				}
+				for (var index=0; index < videoIframe.length; index++) {
+					if(typeof videoIframe[index] == "undefined") {
+						continue;
+					}
+
+					videoIframe[index].contentWindow.postMessage(info,'*');
+				}
+			}
+		} catch (e) {
+			console.log(e);
+		}
+	}
+
+	$(document).ready(function(){
+		try {
+			window.addEventListener('message',function(e) {
+				try {
+					if(typeof e.data == "undefined" || typeof e.data.eventType == "undefined") {
+						return;
+					}
+
+					var eventType = e.data.eventType;
+					if(eventType == "ready") {
+						frameInitSuccess = true;
+
+						var info = {"eventType":"ready"};
+						pushVideoInfo(info);
+					}
+
+					if(eventType == "outPagePop") {
+						pushMsg2Video(e.data);
+					}
+
+					if(eventType == "innerPagePop") {
+						pushMsg2Video(e.data);
+					}
+
+					if(eventType == "closeOutPagePop") {
+						hideCustomPop();
+					}
+				} catch (e) {
+					console.log(e)
+				}
+			});
+		} catch (e) {
+			console.log(e);
+		}
+	});
+</script>
+	<script>
+	function questionnaireClose() {
+		$(".voteContainer").css("display", "none");
+		$("#voteIframe").attr("src", "");
+	}
+	window.addEventListener("message", function (event) {
+		if (!event || !event.data) {
+			return;
+		}
+		var msgJson = {};
+		if (typeof (event.data) === 'string') {
+			try {
+				msgJson = JSON.parse(event.data)
+			} catch (e) {
+			}
+		} else {
+			msgJson = event.data;
+		}
+		if (msgJson == null) {
+			return;
+		}
+		if (msgJson.cmd == "callBackFinishJob") {
+			openVoteIframe && openVoteIframe.contentWindow && openVoteIframe.contentWindow.callBackFinishJob && openVoteIframe.contentWindow.callBackFinishJob();
+		} else if (msgJson.cmd == "questionnaireClose") {
+			questionnaireClose();
+		}
+	})
+</script>
+<script type="text/javascript">
+	var isStuMicroCourse = 'false';
+	var showAiAssistant = 'false';
+	var showAiAssistantTch = 'true';
+	var chaoxingRobot;
+	var chaoxingRobotReady;
+	var chaoxingRobotWsReady;
+	var resolveChaoxingRobotWsReady;
+	var chaoxingRobotWsConnected = false;
+	var ai_stu_clazzId = "152328834";
+	var ai_stu_CourseId = "266218616";
+	var ai_stu_cpi = "432104926";
+	var ai_jobId = "";
+	var ai_pageNum = "";
+	var ai_ask_type = 0;
+	var ai_ask_checkText = "";
+		$(function () {
+		try {
+			initializeRobot().catch(function () {});
+		} catch (ex) {
+			console.log(ex)
+		}
+	});
+
+	// 定义一个异步函数来初始化 robot
+	function initializeRobot() {
+		if (chaoxingRobotReady) {
+			return chaoxingRobotReady;
+		}
+		chaoxingRobotWsReady = new Promise(function (resolve) {
+			resolveChaoxingRobotWsReady = resolve;
+		});
+		chaoxingRobotWsConnected = false;
+		chaoxingRobotReady = initializeRobotInternal().catch(function (error) {
+			chaoxingRobotReady = null;
+			chaoxingRobotWsReady = null;
+			resolveChaoxingRobotWsReady = null;
+			chaoxingRobotWsConnected = false;
+			console.error("Robot initialization failed: ", error);
+			throw error;
+		});
+		return chaoxingRobotReady;
+	}
+
+	async function initializeRobotInternal() {
+		try {
+			if (!window.CxRobotSdkJs || typeof window.CxRobotSdkJs.init !== "function") {
+				throw new Error("CxRobotSdkJs is not loaded");
+			}
+            var locale = "zh-CN";
+			var language = 'chinese';
+			if (typeof language !== "undefined" && language == "english") {
+				locale = "en-US";
+			}
+
+			var params = {
+				rootClass: "root-class",
+				origin: "https://robot-lc.chaoxing.com",
+				clazzId: "152328834",
+				cpi: "432104926",
+				courseName: "%E4%B8%AD%E5%9B%BD%E5%8F%A4%E5%85%B8%E5%B0%8F%E8%AF%B4%E9%89%B4%E8%B5%8F",
+				courseRole: "s",
+				useToonFigure: 1, // 使用卡通形象
+				toonPreset: "aihelper",
+				showTalkContent: 1, // 显示talk内容
+				wakeword: "小星",
+				wakewordAuxs: "小心,小欣",
+				asr: 0, // 1：启用ASR
+				scene: "course",
+				useBuiltInNotify: 0, // 关闭内置通知
+				belongschoolid: "2183",
+				unitId: "2183",
+                locale: locale
+			}
+			if ("false" === "true") {
+				params.mirrorCourseId = "266218616";
+			} else {
+				params.courseId = "266218616";
+			}
+			var robot = await window.CxRobotSdkJs.init(params);
+			if (!robot || typeof robot.on !== "function") {
+				throw new Error("Robot instance is unavailable");
+			}
+			if (typeof robot.putFiles !== "function") {
+				throw new Error("Robot putFiles API is unavailable");
+			}
+			var resolveRobotReady;
+			var rejectRobotReady;
+			var robotReady = new Promise(function (resolve, reject) {
+				resolveRobotReady = resolve;
+				rejectRobotReady = reject;
+			});
+			robot.on("wsConnected", function () {
+				chaoxingRobotWsConnected = true;
+				if (resolveChaoxingRobotWsReady) {
+					resolveChaoxingRobotWsReady(robot);
+					resolveChaoxingRobotWsReady = null;
+				}
+			});
+			var initTimer = setTimeout(function () {
+				rejectRobotReady(new Error("Robot initSuccess timeout"));
+			}, 15000);
+
+			// 初始化成功后，绑定消息事件
+			if (robot) {
+				robot.on("message", function (msg) {
+
+				});
+
+				robot.on("initSuccess", function () {
+					clearTimeout(initTimer);
+					chaoxingRobot = robot;
+
+										courseAiStat(robot);
+					
+					setTimeout(function () {
+						robot.stopNotify();
+					}, 20000);
+					resolveRobotReady(robot);
+				});
+
+				robot.on("ask", (data) => {
+					// _jobId不为空时存库
+					if (typeof ai_jobId != 'undefined' && ai_jobId != 0 && ai_jobId != "") {
+						saveAskRecord(data.text);
+					}
+				});
+
+				robot.on("winVisibleChange", (visible) => {
+					// 关闭提问窗口时，设置_jobId为空
+					if (visible == false) {
+						ai_jobId = "";
+						ai_pageNum = "";
+					}
+				});
+			}
+			return await robotReady;
+
+		} catch (error) {
+			// 初始化失败，处理错误
+			throw error;
+		}
+	}
+
+	function courseAiStat(robot) {
+		try {
+			var dataObj = {"clazzid": "152328834", "courseid": "266218616", "cpi": "432104926", "ut": "s"};
+
+			if ('false' == 'true') {
+				dataObj.no = 1;
+			}
+
+			jQuery.ajax({
+				type: "get",
+				url: "https://stat2-ans.chaoxing.com" + "/course-ai/stat",
+				data: dataObj,
+				xhrFields: {
+					withCredentials: true
+				},
+				success: function (result) {
+					if (result.data.message) {
+						robot.notify(result.data.message)
+					}
+				},
+			});
+			} catch (error) {
+				console.log(error)
+			}
+		}
+		function saveAskRecord(content, askObjectId) {
+		try {
+			var param = {
+				"courseId": ai_stu_CourseId,
+				"clazzId": ai_stu_clazzId,
+				"cpi": ai_stu_cpi,
+				"knowledgeId": ai_stu_knowledgeId,
+				"_jobId": ai_jobId,
+				"content": content,
+				"pageNum": ai_pageNum,
+				"askObjectId": askObjectId,
+				"type": ai_ask_type,
+				"checkText": ai_ask_checkText
+			};
+			jQuery.ajax({
+				type: "post",
+				url: _HOST_CP2_ + "/mycourse/save-chat-record",
+				dataType: 'json',
+				data: param
+			});
+		} catch (error) {
+			console.log(error)
+		}
+	}
+
+	function getSourceInfo() {
+		try {
+			var sourceInfo = {
+				"serverName": 'mooc-p4-2539454588-xn3js',
+				"businessTag": "student_chapter_ask",
+				"extraData": {
+					"courseId": "266218616",
+					"clazzId": "152328834",
+					"personId": "432104926",
+				}
+			};
+			var sourceInfoStr = JSON.stringify(sourceInfo);
+			return encodeURIComponent(sourceInfoStr);
+		} catch (e) {
+			console.log(e);
+			return "";
+		}
+
+	}
+	
+		</script>
+			<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/js/ServerHost.js"></script>
+<script type="text/javascript" async src="https://stat2-ans.chaoxing.com/stat2/js/cozebot-sdk.min.js?v=2025-1219-1038"></script>
+<script type="text/javascript" src="//mooc1.chaoxing.com/mooc-ans/mooc2/js/html2canvas.min.js"></script>
+
+<script type="text/javascript">
+
+    var cozeSdkInitFlag = true;
+    function showCozeBot() {
+        CozeBotSDK.sendToIframeMessage({
+            eventName: "callCozeConversation",
+            isLastWindow: true
+        });
+    }
+
+    function showAssistant(imgData, text, additional) {
+        try {
+            var showKnowledgeSvg = false;
+            if($("#showKnowledgeSvg").val() == 'true'){
+                showKnowledgeSvg = true;
+            }
+            var aiAssistantIdEl = $("#aiAssistantId");
+            if (aiAssistantIdEl.html() && aiAssistantIdEl.html().trim() != '') {
+                aiAssistantIdEl.empty();
+            }
+            var sourceInfo = getSourceInfo();
+            var botId = '7444469164242534415';
+
+            var customVariablesJson = {
+                "courseName":"中国古典小说鉴赏",
+                "chapterName":"历史评价——不可观也"
+            };
+            var customVariablesStr = JSON.stringify(customVariablesJson);
+
+            var customVariables = encodeURIComponent(customVariablesStr);
+            CozeBotSDK.init({
+                appId: '1192651262850',
+                botId: botId,
+                rootElementId: 'cozeAskId',
+                upload: true,
+                target: 'https://stat2-ans.chaoxing.com',
+                sourceInfo: sourceInfo,
+                custom_variables: customVariables,
+                showKnowledgeSvg: showKnowledgeSvg
+            });
+
+            CozeBotSDK.sendToIframeMessage({
+                eventName: "callCozeConversation",
+                isLastWindow: true
+            });
+
+            if (imgData) {
+                if(cozeSdkInitFlag){
+                    setTimeout(function () {
+                        CozeBotSDK.sendToIframeImageBase64({
+                            eventName: "sendImgFile",
+                            imageBase64: imgData,
+                            presetMsg: '',
+                            model: 0
+                        });
+                    }, 2000);
+                    cozeSdkInitFlag = false;
+                }else {
+                    setTimeout(function () {
+                        CozeBotSDK.sendToIframeImageBase64({
+                            eventName: "sendImgFile",
+                            imageBase64: imgData,
+                            presetMsg: '',
+                            model: 0
+                        });
+                    }, 1000);
+                }
+            }else {
+                if(typeof additional == 'undefined'){
+                    additional = '';
+                }
+                setTimeout(function () {
+                    CozeBotSDK.additionalMessages({
+                        eventName: 'additionalMessages',
+                        msg: additional
+                    });
+                    CozeBotSDK.sendToIframeMessage({
+                        eventName: "sendMsgCozeConversation",
+                        msg: text,
+                        model: 0
+                    });
+                }, 2000);
+            }
+        } catch (e) {
+            console.error("Error in CozeBotSDK:", e);
+        }
+    }
+
+    function openCozeBotForVideo(videoFrame) {
+        if (!videoFrame) {
+            return;
+        }
+        var canvas = document.createElement("canvas") // 创建canvas节点
+        var w = window.innerWidth
+        var h = (window.innerWidth / 16) * 9
+        canvas.width = w
+        canvas.height = h // 设置宽高
+        const ctx = canvas.getContext("2d")
+        var video = $(videoFrame).contents().find("#video_html5_api")[0]
+        ctx.drawImage(video, 0, 0, w, h) // video写入到canvas
+        var imgUrl = canvas.toDataURL("image/png")
+        showAssistant(imgUrl);
+    }
+    function openCozeBotForDoc(docEl) {
+        if(!docEl){
+            return;
+        }
+        var imgEl = getFirstVisibleImage(docEl);
+
+        if(imgEl != null){
+            $.ajax({
+                "url": _HOST_CP2_ + "/mycourse/img-base64",
+                "type": "post",
+                "dataType": "json",
+                "data": {
+                    "courseId": ai_stu_CourseId,
+                    "clazzId": ai_stu_clazzId,
+                    "cpi": ai_stu_cpi,
+                    "imgURL": imgEl.src
+                },
+                success: function (result) {
+                    if (result.status) {
+                        showAssistant(result.data);
+                    }
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    console.log("AJAX Error:", textStatus, errorThrown);
+                }
+            });
+
+        }else {
+            showAssistant();
+        }
+    }
+
+    function openCozeBotForText(text) {
+        showAssistant(null, text);
+    }
+
+    function openCozeBotTextAdditional(userRound1, aiRound1, userRound2) {
+        var additional = [ {
+            "role": "user",
+            "type": "question",
+            "content_type": "text",
+            "content": userRound1
+        }, {
+            "role": "assistant",
+            "type": "answer",
+            "content_type": "text",
+            "content": aiRound1
+        },{
+            "role": "user",
+            "type": "question",
+            "content_type": "text",
+            "content": userRound2
+        }
+        ];
+        showAssistant(null, userRound2, additional);
+    }
+
+    function getFirstVisibleImage(docEl) {
+        // 获取视口的高度和宽度
+        const viewportHeight = docEl.contentWindow.innerHeight;
+        const viewportWidth = docEl.contentWindow.innerWidth;
+
+        // 获取视口的顶部和左边界（通常为0，除非有滚动）
+        const viewportTop = 0;
+        const viewportLeft = 0;
+
+        // 获取所有图片元素
+        const images = docEl.contentWindow.document.querySelectorAll('img');
+
+        var image;
+        var visibleHeight = 0;
+
+        // 遍历所有图片元素，检查是否在视口内
+        for (let i = 0; i < images.length; i++) {
+            const rect = images[i].getBoundingClientRect();
+            var setFlag = false;
+            if (rect.top < 0 && rect.bottom > 0) {
+                if (visibleHeight == 0) {
+                    image = images[i];
+                    visibleHeight = rect.bottom;
+                    setFlag = true;
+                } else {
+                    if (rect.bottom > visibleHeight) {
+                        return images[i];
+                    } else {
+                        return image;
+                    }
+                }
+            }
+            if (rect.top >= 0 && rect.bottom <= viewportHeight + rect.height) {
+                var nowHeight;
+                if (rect.bottom > viewportHeight) {
+                    nowHeight = viewportHeight - rect.top;
+                } else {
+                    nowHeight = rect.height;
+                }
+                if (visibleHeight == 0) {
+                    visibleHeight = nowHeight;
+                    image = images[i];
+                    setFlag = true;
+                } else {
+                    if (nowHeight > visibleHeight) {
+                        return images[i];
+                    } else {
+                        return image;
+                    }
+                }
+            }
+            if(image && images.length == 1){
+                return image;
+            }
+            if (!setFlag && visibleHeight > 0) {
+                return image;
+            }
+        }
+
+        // 如果没有找到任何可见图片，返回null
+        return null;
+    }
+
+    window.addEventListener("message", function (event) {
+        var data = event.data;
+        if (data && data.eventName == 'recordMessage') {
+            saveAskRecord(data.content, data.objectId);
+        }
+    })
+</script>
+
+<script type="text/javascript">
+    function showCeyanAssistant(text, imgData, sourceInfo) {
+
+        if (!text && !imgData) {
+            return;
+        }
+        if (text && text.length > 0) {
+            showCeyanAssistantText(text, sourceInfo);
+        } else if (imgData && imgData.length > 0) {
+            showCeyanAssistantImg(imgData, sourceInfo);
+        }
+    }
+
+    function showCeyanAssistantImg(imgData, sourceInfo) {
+        try {
+            var cozeAskIdEl = $("#cozeAskId");
+            if (cozeAskIdEl.html() && cozeAskIdEl.html().trim() != '') {
+                cozeAskIdEl.empty();
+            }
+            CozeBotSDK.init({
+                appId: "1192651262850",
+                botId: "7429626930406326309",
+                rootElementId: "aiAssistantId",
+                target: 'https://stat2-ans.chaoxing.com',
+                upload: true,
+                sourceInfo: sourceInfo
+            });
+
+            CozeBotSDK.sendToIframeMessage({
+                eventName: "callCozeConversation",
+                isLastWindow: true
+            });
+
+            setTimeout(function () {
+                CozeBotSDK.sendToIframeImageBase64({
+                    eventName: "sendImgFile",
+                    imageBase64: imgData,
+                    presetMsg: "讲解一下这道题",
+                    model: 1
+                });
+            }, 2000);
+        } catch (e) {
+            console.error("Error in CozeBotSDK:", e);
+        }
+    }
+
+    function showCeyanAssistantText(text, sourceInfo) {
+        try {
+            var cozeAskIdEl = $("#cozeAskId");
+            if (cozeAskIdEl.html() && cozeAskIdEl.html().trim() != '') {
+                cozeAskIdEl.empty();
+            }
+            CozeBotSDK.init({
+                appId: "1192651262850",
+                botId: "7429626930406326309",
+                rootElementId: "aiAssistantId",
+                upload: true,
+                target: 'https://stat2-ans.chaoxing.com',
+                sourceInfo: sourceInfo
+            });
+
+            CozeBotSDK.sendToIframeMessage({
+                eventName: "callCozeConversation",
+                isLastWindow: true
+            });
+
+            setTimeout(function () {
+                CozeBotSDK.sendToIframeMessage({
+                    eventName: "sendMsgCozeConversation",
+                    msg: text,
+                    model: 1
+                });
+            }, 2000);
+        } catch (e) {
+            console.error("Error in CozeBotSDK:", e);
+        }
+    }
+</script>
+	</body>
+</html>

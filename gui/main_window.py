@@ -69,6 +69,9 @@ class Worker(QThread):
         elif mode == 2:
             from core.web.ext_executor import ExtensionExecutor
             self.executor = ExtensionExecutor(cfg, emit=self._on_event)
+        elif mode == 3:
+            from core.web.course import CourseExecutor
+            self.executor = CourseExecutor(cfg, emit=self._on_event)
         else:
             self.executor = Executor(cfg, emit=self._on_event)
 
@@ -427,12 +430,13 @@ class MainWindow(FluentWidget):
         top = QHBoxLayout()
         top.setSpacing(8)
         self.mode_combo = _ArkSegmented(
-            ["客户端(OCR)", "网页版(浏览器)", "网页版(插件注入)"])
+            ["客户端(OCR)", "网页版(浏览器)", "网页版(插件注入)", "网课(自动播放)"])
         self.mode_combo.setToolTip(
             "客户端:OCR 识别学习通 PC 客户端\n"
             "网页版(浏览器):CDP 直连浏览器,DOM 读题 + 程序点击\n"
             "网页版(插件注入):程序自动给专用浏览器装插件,插件读题点击,\n"
-            "主程序只负责调模型给答案(iframe 兼容性最好)")
+            "主程序只负责调模型给答案(iframe 兼容性最好)\n"
+            "网课(自动播放):自动静音播放网课视频,完成后自动跳到下一任务点")
         top.addWidget(self.mode_combo)
 
         self.status_badge = InfoBadge("● 未连接", self)
@@ -547,9 +551,8 @@ class MainWindow(FluentWidget):
     def _build_title_bar_buttons(self):
         """网课助手(预留)/ 截图搜题 / 环境检测 / 设置 / 主题切换放入标题栏右侧"""
         self.btn_course = TransparentToolButton(FIF.EDUCATION, self.titleBar)
-        self.btn_course.setToolTip("网课助手(预留)")
-        self.btn_course.setEnabled(False)   # 功能未实现,置灰
-        # 未来实现时: self.btn_course.clicked.connect(self.on_course_assistant)
+        self.btn_course.setToolTip("网课助手(自动播放):选择「网课(自动播放)」模式后点开始")
+        self.btn_course.clicked.connect(self._select_course_mode)
 
         self.btn_shot = TransparentToolButton(FIF.CAMERA, self.titleBar)
         self.btn_shot.setToolTip("截图搜题(框选一道题,OCR + AI 给出答案与解析)")
@@ -817,16 +820,24 @@ class MainWindow(FluentWidget):
         dlg = EnvDetectDialog(result, self)
         dlg.exec()
 
+    def _select_course_mode(self):
+        """标题栏网课助手按钮:切换到自动播放模式并提示操作方式"""
+        self.mode_combo.setCurrentIndex(3)
+        InfoBar.info("网课助手", "已选择「网课(自动播放)」模式,"
+                     "请在专用浏览器中打开课程学习页后点「开始」",
+                     duration=5000, parent=self)
+
     def on_start(self):
         cfg = Config.get()
-        if not cfg["llm"]["api_key"] or "xxxx" in cfg["llm"]["api_key"]:
+        mode = self.mode_combo.currentIndex()
+        if mode != 3 and (not cfg["llm"]["api_key"] or "xxxx" in cfg["llm"]["api_key"]):
             InfoBar.warning("缺少配置", "请先在【设置】中填写 API Key 和模型信息",
                             duration=3000, parent=self)
             return
         if cfg["action"]["dry_run"]:
             self.logger.info("dry-run 模式已开启:不会实际点击")
 
-        mode = self.mode_combo.currentIndex()   # 0 客户端 / 1 网页CDP / 2 网页插件
+        mode = self.mode_combo.currentIndex()   # 0 客户端 / 1 网页CDP / 2 网页插件 / 3 网课
         if mode == 0:
             # 客户端模式:重连窗口
             from core.controller.window import WindowCapture
@@ -837,8 +848,11 @@ class MainWindow(FluentWidget):
                 return
         elif mode == 1:
             self.logger.info("网页版模式:将连接调试端口的浏览器(未启动会自动拉起)")
-        else:
+        elif mode == 2:
             self.logger.info("插件模式:将启动本地桥并拉起带插件的专用浏览器")
+        elif mode == 3:
+            self.logger.info("网课模式:将自动播放学习通网课视频(未启动浏览器会自动拉起)"
+                             ",请在浏览器中先打开课程学习页")
 
         self.worker = Worker(cfg.data, mode=mode)
         self.worker.event.connect(self.on_worker_event)

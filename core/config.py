@@ -99,6 +99,12 @@ DEFAULT_CONFIG = {
         "toolbar_indent": 25,
         "focus_click_x": 70,
     },
+    # 网课(自动播放):静音播放学习通网课视频,完成后自动跳转
+    "course": {
+        "playback_rate": 1.0,
+        "volume": 0,
+        "mode": "next",   # next = PCount.next 下一任务点 / job = 点目录下一章
+    },
 }
 
 
