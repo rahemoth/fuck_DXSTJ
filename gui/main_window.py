@@ -549,11 +549,7 @@ class MainWindow(FluentWidget):
         root.addWidget(log_card, stretch=1)
 
     def _build_title_bar_buttons(self):
-        """网课助手(预留)/ 截图搜题 / 环境检测 / 设置 / 主题切换放入标题栏右侧"""
-        self.btn_course = TransparentToolButton(FIF.EDUCATION, self.titleBar)
-        self.btn_course.setToolTip("网课助手(自动播放):选择「网课(自动播放)」模式后点开始")
-        self.btn_course.clicked.connect(self._select_course_mode)
-
+        """截图搜题 / 环境检测 / 设置 / 主题切换放入标题栏右侧"""
         self.btn_shot = TransparentToolButton(FIF.CAMERA, self.titleBar)
         self.btn_shot.setToolTip("截图搜题(框选一道题,OCR + AI 给出答案与解析)")
         self.btn_shot.clicked.connect(self.on_screenshot_search)
@@ -572,7 +568,7 @@ class MainWindow(FluentWidget):
 
         layout = self.titleBar.hBoxLayout
         insert_at = layout.count() - 1  # min/max/close 按钮组之前
-        for btn in (self.btn_course, self.btn_shot, self.btn_env,
+        for btn in (self.btn_shot, self.btn_env,
                     self.btn_config, self.btn_theme):
             layout.insertWidget(insert_at, btn, 0, Qt.AlignVCenter)
             insert_at += 1
@@ -819,13 +815,6 @@ class MainWindow(FluentWidget):
             return
         dlg = EnvDetectDialog(result, self)
         dlg.exec()
-
-    def _select_course_mode(self):
-        """标题栏网课助手按钮:切换到自动播放模式并提示操作方式"""
-        self.mode_combo.setCurrentIndex(3)
-        InfoBar.info("网课助手", "已选择「网课(自动播放)」模式,"
-                     "请在专用浏览器中打开课程学习页后点「开始」",
-                     duration=5000, parent=self)
 
     def on_start(self):
         cfg = Config.get()

@@ -50,6 +50,13 @@ class ExtBridge:
                      qtype=payload.get("qtype") or "single",
                      stem=payload.get("stem") or "",
                      options=options)
+        # 填空/简答:插件上报空位数/编辑器标记,与客户端 OCR 定位后的
+        # Question 结构对齐(is_answerable 校验 + 空位数进 prompt)
+        n_blanks = int(payload.get("blanks") or 0)
+        q.blanks = [{"index": i + 1, "center": (0, 0), "region": (0, 0, 0, 0)}
+                    for i in range(n_blanks)]
+        if payload.get("editor"):
+            q.editor_center = (0, 0)
         if not q.is_answerable:
             return {"ok": False, "error": "选项不足或题干为空"}
         try:

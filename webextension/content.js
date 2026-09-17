@@ -63,6 +63,8 @@
   function qtypeFromText(t) {
     if (t.includes('判断')) return 'judge';
     if (t.includes('多选')) return 'multiple';
+    if (t.includes('填空')) return 'fill';
+    if (t.includes('简答')) return 'short_answer';
     return 'single';
   }
 
@@ -78,6 +80,30 @@
       const qtype = qtypeFromText(
         ((typeEl ? typeEl.innerText : '') + full.slice(0, 60)));
 
+      // 填空/简答:输入元素收集(移植客户端 _fill_blanks/_type_answer 的目标定位)
+      let blanks = [];
+      let editor = null;
+      if (qtype === 'short_answer') {
+        // 学习通简答是 UEditor 富文本(iframe 内 contentEditable)或 textarea
+        const f = c.querySelector('.edui-editor iframe, iframe.edui-editor');
+        const fbody = f && f.contentDocument && f.contentDocument.body;
+        if (fbody && fbody.isContentEditable) {
+          editor = { kind: 'ueditor', body: fbody };
+        } else {
+          const ta = c.querySelector('textarea');
+          if (ta) editor = { kind: 'textarea', el: ta };
+        }
+      } else if (qtype === 'fill') {
+        blanks = [...c.querySelectorAll('textarea')]
+          .map(el => ({ kind: 'textarea', el }));
+        if (!blanks.length) {
+          // 隐藏 textarea + 可见富文本的混合形态(UEditor 同页有隐藏 textarea)
+          blanks = [...c.querySelectorAll('input[type=text]:not([type=hidden])')]
+            .filter(el => el.getBoundingClientRect().height > 5)
+            .map(el => ({ kind: 'input', el }));
+        }
+      }
+
       const rows = [...c.querySelectorAll('input[type=radio], input[type=checkbox]')]
         .map(inp => ({ row: rowOf(inp), text: (rowOf(inp).innerText || '').trim() }));
       let labels = rows.map((r, i) => labelOf(r.text, qtype, i));
@@ -92,16 +118,19 @@
                  !/^[A-H][.、．,，:：\s]/.test(s);
         }).join(' ').slice(0, 300);
       }
-      const answered = !!c.querySelector(
-        'input[type=radio]:checked, input[type=checkbox]:checked, [data-xxt-done]');
+      const answered =
+        (qtype === 'short_answer') ? checkEditorWritten(editor) :
+        (qtype === 'fill') ? blanks.some(b => valueOfBlank(b).trim()) :
+        !!c.querySelector(
+          'input[type=radio]:checked, input[type=checkbox]:checked, [data-xxt-done]');
       return {
         qtype, answered, stem: stem.replace(/\s+/g, ' ').trim(),
-        rows, labels,
+        rows, labels, blanks, editor, container: c,
       };
     });
   }
 
-  // ---------- 策略2:题号锚点切分(不依赖容器类名) ----------
+    // ---------- 策略2:题号锚点切分(不依赖容器类名) ----------
 
   // 题号锚点:文本形如 "1. (单选题)" / "12.(多选题)" / "26.(判断题)"
   function findQuestionAnchors() {
@@ -220,6 +249,9 @@
       idx, qtype: it.qtype, stem: it.stem,
       labels: it.labels, texts: it.rows.map(r => r.text),
       answered: it.answered,
+      // 填空/简答附加信息(供桥构造与客户端一致的 Question)
+      blanks: it.blanks ? it.blanks.length : 0,
+      editor: it.qtype === 'short_answer' && !!it.editor,
     }));
   }
 
@@ -233,6 +265,103 @@
       }
     }
     return opts;
+  }
+
+  // ---------- 填空/简答:写入与验证(移植客户端 _fill_blanks/_type_answer) ----------
+
+  function setNativeValue(el, text) {
+    // React/页面重渲染会重置 value,必须走原生 setter
+    const proto = el instanceof HTMLTextAreaElement
+      ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    const setter = Object.getOwnPropertyDescriptor(proto, 'value').set;
+    setter.call(el, text);
+    for (const t of ['input', 'change']) {
+      el.dispatchEvent(new Event(t, { bubbles: true }));
+    }
+  }
+
+  function valueOfBlank(b) {
+    if (!b) return '';
+    if (b.kind === 'ueditor') return (b.body.textContent || '').trim();
+    return b.el ? (b.el.value || '') : '';
+  }
+
+  function checkEditorWritten(editor) {
+    if (editor && editor.kind === 'ueditor')
+      return (editor.body.textContent || '').trim().length > 10;
+    if (editor && editor.kind === 'textarea')
+      return (editor.el.value || '').trim().length > 10;
+    return false;
+  }
+
+  // 写入一个空:textarea/input 直接设值;UEditor 写 iframe body 并触发事件
+  function writeBlank(b, text) {
+    if (b.kind === 'ueditor') {
+      b.body.innerHTML = '<p>' +
+        text.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</p>';
+      for (const t of ['input', 'blur', 'change']) {
+        b.body.dispatchEvent(new Event(t, { bubbles: true }));
+      }
+      return valueOfBlank(b).trim().length > 0;
+    }
+    setNativeValue(b.el, text);
+    b.el.focus();
+    return valueOfBlank(b).trim() === text.trim();
+  }
+
+  async function writeTextAnswer(item, answers, cfg) {
+    // 简答:单元素列表 → 一个编辑器;填空:逐空逐个写
+    if (item.qtype === 'short_answer') {
+      const text = (answers[0] || '').trim();
+      if (!item.editor || !text) {
+        containerDone(item);
+        return { ok: false, msg: '未定位到简答编辑器' };
+      }
+      await sleep(400);
+      const ok = writeBlank(item.editor, text);
+      containerDone(item);
+      return ok ? { ok: true } : { ok: false, msg: '简答文本写入失败' };
+    }
+    let written = 0;
+    for (let i = 0; i < item.blanks.length; i++) {
+      if (i >= answers.length) break;
+      await sleep(300);
+      if (!writeBlank(item.blanks[i], answers[i])) {
+        return { ok: false, msg: `第${i + 1}空写入失败` };
+      }
+      written++;
+    }
+    if (written < item.blanks.length) {
+      containerDone(item);
+      return { ok: false, msg: `空位数(${item.blanks.length})与答案数(${written})不符` };
+    }
+    containerDone(item);
+    return { ok: true };
+  }
+
+  function containerDone(item) {
+    if (item.container) item.container.setAttribute('data-xxt-done', '1');
+  }
+
+  // ---------- 单题翻页页:点"下一题" ----------
+
+  function navCount() {
+    return (window.__xxtNext || 0);
+  }
+
+  function tryNextPage() {
+    const cands = [...document.querySelectorAll('a, button, span, div, input')]
+      .filter(el => {
+        const t = ((el.tagName === 'INPUT' ? el.value : el.innerText) || '').trim();
+        return t === '下一题' || t === '下一个' || t === '下一题 >';
+      })
+      .filter(el => el.getBoundingClientRect().height > 0 &&
+        el.getBoundingClientRect().width > 0);
+    if (!cands.length) return false;
+    window.__xxtNext = navCount() + 1;
+    cands[0].click();
+    diagnose('本页题目已答完,点击「下一题」翻页');
+    return true;
   }
 
   // ---------- 点击选项(直接使用抽取缓存的行元素) ----------
@@ -336,25 +465,63 @@
           continue;
         }
         pending++;
+        const isText = it.qtype === 'fill' || it.qtype === 'short_answer';
+        // 守护:兜底聚类可能把选项题误判为填空/简答(该路径不收集输入区),
+        // 此时写入函数会因 blanks/editor 缺失抛错,直接报人工检查
+        const rawIt = cache.items[it.idx];
+        const writable = isText && rawIt && (rawIt.qtype === 'short_answer'
+          ? !!rawIt.editor
+          : Array.isArray(rawIt.blanks) && rawIt.blanks.length > 0);
+        if (isText && !writable) {
+          await report('fail', { msg: `题目${it.idx + 1} 未定位到输入区(填空/简答无法自动作答),请人工检查` });
+          continue;
+        }
         const opts = optsOf(it);
-        await report('question', { qtype: it.qtype, stem: it.stem, options: opts });
+        await report('question', {
+          qtype: it.qtype, stem: it.stem, options: opts,
+          blanks: it.blanks, editor: it.editor,
+        });
         const r = await api('/solve', {
           number: it.idx + 1, qtype: it.qtype, stem: it.stem, options: opts,
+          blanks: it.blanks, editor: it.editor,
         }).catch(() => null);
         if (!r || !r.ok) {
-          await report('fail', { msg: `题目${it.idx + 1} 求解失败: ${r ? r.error : '桥服务无响应'}` });
+          await report('fail', {
+            msg: `题目${it.idx + 1} 求解失败: ${r ? r.error : '桥服务无响应'}`,
+          });
           continue;
         }
         await report('answer', { number: it.idx + 1, answer: r.answer });
         if (!cfg.dry_run) {
-          for (const lb of r.answer) {
-            const ret = clickOption(it.idx, lb);
-            if (ret === 'unverified') {
-              await report('log', { msg: `题目${it.idx + 1} 选项 ${lb} 点击后未检出选中效果,请人工检查` });
-            } else if (ret !== 'ok') {
-              await report('log', { msg: `选项 ${lb} 点击失败: ${ret}` });
+          if (isText) {
+            // 填空/简答:按客户端 _fill_blanks/_type_answer 逻辑写入
+            const wr = await writeTextAnswer(cache.items[it.idx], r.answer);
+            if (!wr.ok) {
+              await report('log', { msg: `题目${it.idx + 1} ${wr.msg},请人工检查` });
             }
-            await sleep(rnd(cfg.opt_delay[0], cfg.opt_delay[1]) * 1000);
+          } else {
+            for (const lb of r.answer) {
+              const ret = clickOption(it.idx, lb);
+              if (ret === 'unverified') {
+                await report('log', { msg: `题目${it.idx + 1} 选项 ${lb} 点击后未检出选中效果,请人工检查` });
+              } else if (ret !== 'ok') {
+                await report('log', { msg: `选项 ${lb} 点击失败: ${ret}` });
+              }
+              await sleep(rnd(cfg.opt_delay[0], cfg.opt_delay[1]) * 1000);
+            }
+            // 点击复核(客户端 _click_with_verify 思想):重读选项状态,
+            // 未选中则同轮补点(批处理窗口内重试上限由 attempts 兜底)
+            await sleep(600);
+            const re = extract();   // 注意:cache.items 已被重建,按题干重新定位
+            const again = re.find(x => x.idx === it.idx);
+            if (again && !again.answered) {
+              const ni = cache.items.findIndex(
+                ci => ci.stem && ci.stem === it.stem);
+              if (ni >= 0) {
+                for (const lb of r.answer) clickOption(ni, lb);
+                await sleep(1000);
+              }
+            }
           }
         }
         await sleep(rnd(cfg.q_delay[0], cfg.q_delay[1]) * 1000);
@@ -364,6 +531,12 @@
         if (!moved) {
           idle++;
           if (idle >= 2) {
+            // 翻页页:点"下一题"继续(有次数上限);无按钮才算完成
+            if (tryNextPage() && navCount() <= 300) {
+              idle = 0;
+              await sleep(1500);
+              continue;
+            }
             await report('frame-done', { msg: '本页题目已全部答完且无法再滚动' });
             return;
           }
