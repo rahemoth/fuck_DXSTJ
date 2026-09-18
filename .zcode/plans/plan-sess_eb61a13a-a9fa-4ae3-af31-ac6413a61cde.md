@@ -18,7 +18,7 @@ ImageGrab 全屏物理像素图 + QGuiApplication.screens() 几何并集 + 主�
 
 **③ ScreenshotSearchWorker(QThread) — 沿用 EnvDetectWorker 模式**
 - 信号 stage(str) / result(dict) / error(str)。
-- 流程:逻辑选区×dpr 裁剪物理像素 → 小图(高<60 或宽<300)3× LANCZOS 放大+降阈 → OcrEngine.run → 无块报「未识别到文字」→ 阅读序拼接 → LLMClient(cfg["llm"]).chat(SYSTEM, text)。
+- 流程:逻辑选区×dpr 裁剪物理像素 → 小图(高<60 或宽<300)3× LANCZOS 放大+降阈 1111→ OcrEngine.run → 无块报「未识别到文字」→ 阅读序拼接 → LLMClient(cfg["llm"]).chat(SYSTEM, text)。
 - 系统提示词强制输出【答案】/【解析】(分步 150-400 字、OCR 噪声容错、信息不足明说);无标记时回退展示原文。
 
 **④ ScreenshotResultDialog(MessageBoxBase) — 与 ConfigDialog 同款视觉**
